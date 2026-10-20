@@ -22,6 +22,7 @@ class VoiceSessionCoordinator(
     private val clock: Clock,
     private val onTiming: (VoiceMetric, Long) -> Unit = { _, _ -> },
     private val onFailure: (String, String) -> Unit = { _, _ -> },
+    private val onJourney: (VoiceJourneyStage) -> Unit = {},
     private val hasMicrophonePermission: () -> Boolean,
 ) {
     private val mutable = MutableStateFlow(VoiceSessionState())
@@ -42,7 +43,9 @@ class VoiceSessionCoordinator(
 
     private fun start(demo: String?) {
         if (job?.isActive == true) return
+        onJourney(VoiceJourneyStage.REQUEST_STARTED)
         if (demo == null && !hasMicrophonePermission()) {
+            onJourney(VoiceJourneyStage.PERMISSION_REQUIRED)
             mutable.value = VoiceSessionState(VoiceState.PERMISSION_REQUIRED, "Permite el micrófono para hablar.")
             return
         }
@@ -61,11 +64,18 @@ class VoiceSessionCoordinator(
                 operation = "STT"
                 val text = demo ?: run {
                     transition(VoiceState.LISTENING, "Micrófono activo · Te escucho")
+                    onJourney(VoiceJourneyStage.STT_LISTENING)
                     val recognitionStart = System.nanoTime()
-                    withTimeout(15_000) { stt.recognize { transition(VoiceState.TRANSCRIBING, "Procesando voz…") } }
+                    withTimeout(15_000) { stt.recognize { if (token == generation) {
+                        transition(VoiceState.TRANSCRIBING, "Procesando voz…")
+                        onJourney(VoiceJourneyStage.STT_TRANSCRIBING)
+                    } } }
                         .also { onTiming(VoiceMetric.RECOGNITION, ((System.nanoTime() - recognitionStart) / 1_000_000).coerceAtLeast(0)) }
                 }
+                if (token != generation) return@launch
                 check(text.isNotBlank()) { "No se ha detectado voz" }
+                if (demo == null) onJourney(VoiceJourneyStage.TRANSCRIPT_OBTAINED)
+                onJourney(VoiceJourneyStage.ORCHESTRATOR_PROCESSING)
                 transition(VoiceState.UNDERSTANDING, "Interpretando petición…")
                 val request = AssistantRequest("voice-$started-$token", "foreground", text, if (demo == null) InputMode.VOICE else InputMode.DEMO, clock.now())
                 transition(VoiceState.EXECUTING, "Consultando…")
@@ -74,27 +84,32 @@ class VoiceSessionCoordinator(
                 val result = assistant.answer(request)
                 if (token != generation) return@launch
                 writtenAnswer = result.message
+                onJourney(VoiceJourneyStage.TEXT_RESPONSE)
                 onTiming(VoiceMetric.ORCHESTRATOR, ((System.nanoTime() - orchestratorStart) / 1_000_000).coerceAtLeast(0))
                 transition(VoiceState.SPEAKING, result.message)
                 operation = "TTS"
+                onJourney(VoiceJourneyStage.TTS_STARTED)
                 val replyErrorSource = if (result.toolId == "assistant" && result.errorCode != null) "AI" else null
                 if (token == generation) mutable.value = mutable.value.copy(errorSource = replyErrorSource)
                 val ttsStart = System.nanoTime()
                 withTimeout(20_000) { tts.speak(result.message) }
+                if (token == generation) onJourney(VoiceJourneyStage.TTS_COMPLETED)
                 onTiming(VoiceMetric.TTS_CALLBACK, ((System.nanoTime() - ttsStart) / 1_000_000).coerceAtLeast(0))
                 transition(VoiceState.IDLE)
                 if (token == generation) mutable.value = mutable.value.copy(errorSource = replyErrorSource)
             } catch (_: TimeoutCancellationException) {
                 if (token != generation) return@launch
-                val timedOutWhileSpeaking = mutable.value.state == VoiceState.SPEAKING
-                onFailure(if (timedOutWhileSpeaking) "TTS" else "STT", if (timedOutWhileSpeaking) "TTS_TIMEOUT" else "STT_TIMEOUT")
+                val timedOutWhileSpeaking = operation == "TTS"
+                onJourney(VoiceJourneyStage.FAILED)
+                onFailure(operation, "${operation}_TIMEOUT")
                 transition(VoiceState.ERROR, if (timedOutWhileSpeaking) mutable.value.message + " · Voz no disponible (tiempo agotado)." else "Tiempo de espera agotado. Puedes volver a intentarlo.")
-                if (token == generation) mutable.value = mutable.value.copy(errorSource = if (timedOutWhileSpeaking) "TTS" else "STT")
+                if (token == generation) mutable.value = mutable.value.copy(errorSource = operation)
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: SecurityException) {
                 if (token == generation) {
-                    val stage = if (writtenAnswer != null) "TTS" else "STT"
+                    onJourney(VoiceJourneyStage.PERMISSION_REQUIRED)
+                    val stage = operation
                     onFailure(stage, "PERMISSION_OR_CONSENT")
                     transition(VoiceState.PERMISSION_REQUIRED, writtenAnswer?.plus(" · Voz sin permiso.")
                         ?: "Falta permiso o consentimiento para reconocimiento.")
@@ -102,6 +117,7 @@ class VoiceSessionCoordinator(
                 }
             } catch (failure: Exception) {
                 if (token != generation) return@launch
+                onJourney(VoiceJourneyStage.FAILED)
                 val speaking = mutable.value.state == VoiceState.SPEAKING
                 val stage = operation
                 val code = failure.message?.takeIf { it in setOf("STT_NO_MATCH", "STT_SILENCE", "STT_NETWORK_TIMEOUT", "STT_BUSY", "STT_INTERRUPTED") }
@@ -124,6 +140,7 @@ class VoiceSessionCoordinator(
         releaseAudio()
         assistant.cancelPending()
         onFailure("VOICE", "CANCELLED")
+        onJourney(VoiceJourneyStage.CANCELLED)
         mutable.value = VoiceSessionState(VoiceState.CANCELLED,
             writtenAnswer?.plus(" · Micrófono apagado · Cancelado") ?: "Micrófono apagado · Cancelado")
     }

@@ -34,6 +34,7 @@ class ToolRegistry(
     private val navigation: NavigationProvider,
     private val contacts: ContactProvider,
     private val places: PlacesController? = null,
+    private val onJourney: (VoiceJourneyStage) -> Unit = {},
 ) {
     fun placeResults(): List<PlaceSearchResult> = places?.state?.value?.results.orEmpty()
     fun selectedPlaceId(): String? = places?.selected()?.providerId
@@ -56,9 +57,12 @@ class ToolRegistry(
     ).associateBy { it.id }
 
     suspend fun execute(request: ToolRequest, confirmedNumber: String? = null): ToolResult {
+        onJourney(VoiceJourneyStage.TOOL_REQUESTED)
         val definition = definitions[request.toolId]
-            ?: return ToolResult.denied(request.toolId, "UNKNOWN_TOOL", "Herramienta no permitida.")
-        policy.evaluate(definition, request, confirmedNumber)?.let { return it }
+            ?: run { onJourney(VoiceJourneyStage.TOOL_REJECTED)
+                return ToolResult.denied(request.toolId, "UNKNOWN_TOOL", "Herramienta no permitida.") }
+        policy.evaluate(definition, request, confirmedNumber)?.let { onJourney(VoiceJourneyStage.TOOL_REJECTED); return it }
+        onJourney(VoiceJourneyStage.TOOL_AUTHORIZED)
         return try {
             withTimeout(definition.timeoutMs) { dispatch(request) }
         } catch (_: TimeoutCancellationException) {

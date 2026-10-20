@@ -12,10 +12,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ai.copilotdrive.app.ui.*
 import ai.copilotdrive.core.DiagnosticStatus
-import ai.copilotdrive.core.VoiceMetric
+import ai.copilotdrive.core.*
 
 @Composable
-fun DeviceLabScreen(model: DashboardViewModel, onBack: () -> Unit, onPlaces: () -> Unit = {}) {
+fun DeviceLabScreen(model: DashboardViewModel, onBack: () -> Unit, onPlaces: () -> Unit = {}, onMicrophone: () -> Unit = {}) {
+    val acoustic by model.acousticState.collectAsStateWithLifecycle()
+    val journey by model.voiceJourney.collectAsStateWithLifecycle()
     val checks by model.diagnostics.collectAsStateWithLifecycle()
     val latencies by model.voiceLatencies.collectAsStateWithLifecycle()
     var providerWarning by remember { mutableStateOf(false) }
@@ -46,6 +48,21 @@ fun DeviceLabScreen(model: DashboardViewModel, onBack: () -> Unit, onPlaces: () 
                 OutlinedButton(onClick = { providerWarning = true }) { Text("Comprobar proveedor IA") }
                 OutlinedButton(onClick = onPlaces) { Text("Probar lugares desde Lugares") }
                 Text("La conexión OBD se inicia desde Ajustes con confirmación. Usa solo un vehículo detenido.", color = Muted)
+            }
+        }
+        item {
+            AcousticProbePanel(acoustic, { voiceWarning = true }, model::cancel, model::confirmAcoustic)
+        }
+        item {
+            DashboardCard {
+                Text("Recorrido Jarvis", modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
+                Text("Di: cuánta gasolina queda. La respuesta del simulador se conserva en el dashboard. El diagnóstico muestra solo etapas, sin transcripción ni argumentos.", color = Muted)
+                OutlinedButton(onClick = onMicrophone, modifier = Modifier.testTag("pilot-listen")) { Text("Pulsar para hablar con Jarvis") }
+                OutlinedButton(onClick = { model.demo("gasolina") }) { Text("Probar texto local sin micrófono") }
+                OutlinedButton(onClick = model::cancel) { Text("Cancelar conversación") }
+                Text("Autorización de herramienta = permiso de política; comprueba por separado el efecto real.", color = Muted)
+                journey.forEach { Text(journeyLabel(it)) }
+                TextButton(onClick = model::clearVoiceJourney) { Text("Borrar etapas de voz") }
             }
         }
         item {
@@ -88,4 +105,43 @@ fun DeviceLabScreen(model: DashboardViewModel, onBack: () -> Unit, onPlaces: () 
         text = { Text("Esta prueba envía una frase fija al proveedor configurado, requiere consentimiento de IA y puede consumir cuota. No incluye telemetría.") },
         confirmButton = { TextButton(onClick = { providerWarning = false; model.testProvider() }) { Text("Enviar prueba") } },
         dismissButton = { TextButton(onClick = { providerWarning = false }) { Text("Cancelar") } })
+}
+
+@Composable
+fun AcousticProbePanel(state: AcousticProbeState, onStart: () -> Unit, onCancel: () -> Unit,
+    onConfirm: (Long, Boolean) -> Unit) {
+    DashboardCard {
+        Text("Confirmación acústica guiada", modifier = Modifier.semantics { heading() }, style = MaterialTheme.typography.titleLarge)
+        Text(AcousticProbe.PHRASE)
+        Text("Estado técnico: ${state.status.name}")
+        Text("Observación humana: ${state.human.name}", modifier = Modifier.testTag("acoustic-human"))
+        Text("Registro temporal de esta sesión. Calificación física PENDING hasta acta de dispositivo y APK. No se graba audio.", color = Muted)
+        OutlinedButton(onClick = onStart, enabled = state.status != AcousticProbeStatus.SPEAKING) { Text("Reproducir frase guiada") }
+        OutlinedButton(onClick = onCancel, enabled = state.status == AcousticProbeStatus.SPEAKING) { Text("Cancelar frase") }
+        if (state.status == AcousticProbeStatus.COMPLETED) {
+            Text("Confirma si has escuchado completa y correctamente la frase en español.")
+            OutlinedButton(onClick = { onConfirm(state.attempt, true) }, enabled = state.human == HumanOutcome.PENDING,
+                modifier = Modifier.testTag("acoustic-heard")) { Text("Sí, la he escuchado correctamente") }
+            OutlinedButton(onClick = { onConfirm(state.attempt, false) }, enabled = state.human == HumanOutcome.PENDING,
+                modifier = Modifier.testTag("acoustic-not-heard")) { Text("No se ha escuchado correctamente") }
+        }
+        if (state.status == AcousticProbeStatus.FAILED) Text("TTS no disponible. La frase escrita se conserva; revisa motor y voz local es-ES.", color = Amber)
+    }
+}
+
+private fun journeyLabel(stage: VoiceJourneyStage) = when (stage) {
+    VoiceJourneyStage.REQUEST_STARTED -> "Solicitud iniciada"
+    VoiceJourneyStage.STT_LISTENING -> "STT escuchando"
+    VoiceJourneyStage.STT_TRANSCRIBING -> "STT procesando voz"
+    VoiceJourneyStage.TRANSCRIPT_OBTAINED -> "Transcripción obtenida (contenido oculto)"
+    VoiceJourneyStage.ORCHESTRATOR_PROCESSING -> "Orquestador procesando"
+    VoiceJourneyStage.TOOL_REQUESTED -> "Herramienta solicitada"
+    VoiceJourneyStage.TOOL_AUTHORIZED -> "Herramienta autorizada por política"
+    VoiceJourneyStage.TOOL_REJECTED -> "Herramienta rechazada por política"
+    VoiceJourneyStage.TEXT_RESPONSE -> "Respuesta textual disponible en dashboard"
+    VoiceJourneyStage.TTS_STARTED -> "TTS iniciado"
+    VoiceJourneyStage.TTS_COMPLETED -> "TTS finalizado (callback técnico)"
+    VoiceJourneyStage.PERMISSION_REQUIRED -> "Permiso o consentimiento requerido"
+    VoiceJourneyStage.FAILED -> "Etapa fallida; consulta el estado de voz"
+    VoiceJourneyStage.CANCELLED -> "Cancelado"
 }

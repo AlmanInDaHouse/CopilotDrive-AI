@@ -44,7 +44,7 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
             when {
                 !state.preferencesLoaded -> Box(Modifier.padding(32.dp)) { Text("Preparando CopilotDrive…") }
                 !state.preferences.onboarded -> Onboarding { model.savePreferences(state.preferences.copy(onboarded = true)) }
-                deviceLab -> DeviceLabScreen(model, { deviceLab = false }, { deviceLab = false; places = true })
+                deviceLab -> DeviceLabScreen(model, { model.cancel(); deviceLab = false }, { model.cancel(); deviceLab = false; places = true }, onMicrophone)
                 places -> PlacesScreen(state, model, { places = false }, onPlaceSearch)
                 settings -> SettingsScreen(state, { settings = false }, model::savePreferences, { settings = false; onMicrophone() }, onContacts, onMediaPermission, onBluetoothPermission, model::setDemoMedia, model.androidMedia::select, model, { deviceLab = true })
                 customization.edit != null -> DashboardEditor(state, customization, model.customization::change, model::saveLayout,
@@ -82,7 +82,7 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
     }
     BackHandler(settings || deviceLab || places || customization.edit != null) {
         if (customization.edit != null) model.customization.cancel()
-        else if (places) places = false else if (deviceLab) deviceLab = false else settings = false
+        else if (places) places = false else if (deviceLab) { model.cancel(); deviceLab = false } else settings = false
     }
 }
 
