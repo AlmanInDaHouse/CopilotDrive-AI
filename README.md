@@ -139,6 +139,8 @@ python -m unittest discover -s tests -v
 
 Lee `SECURITY.md` y `docs/ARCHITECTURE.md`.
 
+Para el APK Android y un adaptador ELM327 Bluetooth Classic ya emparejado, sigue [la guía de conexión](docs/CONNECT_OBD.md). Esta integración local no transmite telemetría al proveedor de IA externo; el servidor Python anterior tiene una política de IA distinta descrita arriba.
+
 ## Licencia y contribuciones
 
 MIT. Pull requests bienvenidos una vez publicado el repositorio en GitHub.

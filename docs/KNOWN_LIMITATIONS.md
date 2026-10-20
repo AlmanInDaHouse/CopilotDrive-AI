@@ -5,7 +5,7 @@ PR #1 y #2 están fusionadas; el workflow Android más reciente de `main` (`b364
 | Área | Limitación e impacto | Próxima validación/cambio |
 |---|---|---|
 | Hardware | Sin vehículo ni pantalla aftermarket física; no homologación ni uso en marcha | Matriz de dispositivos en laboratorio |
-| Telemetría Android | Solo simulador y parser OBD probado; no transporte Bluetooth, detección PID ni reconexión real | Adaptador read-only separado con fixtures seriales |
+| Telemetría Android | RFCOMM y descubrimiento PID implementados y probados con fake; ningún adaptador o coche físico validado | Matriz física de teléfono, adaptador y vehículo |
 | IA | Adaptador Chat Completions real implementado, pero no validado con un servidor comercial ni uno local real | Probar interoperabilidad y respuesta bajo condiciones de red reales |
 | Contexto IA | Solo texto e historial efímero; vehículo/contactos/ubicación no se transmiten; toggle de contexto deshabilitado | Diseñar contexto por dato con consentimiento específico |
 | Credenciales | Keystore cifra token local, pero un dispositivo comprometido o controlado por el usuario puede exponerlo al usar la app | Recomendar credencial con cuota y revocación; prueba de backup/restore |

@@ -7,7 +7,7 @@
 | 003 | ScenarioTest media, MediaSelectionTest, PlatformMediaTest con sesi?n Android real | Spotify/SoundCloud/YouTube f?sicos |
 | 004 | ScenarioTest voz, AppFlowTest hasta respuesta con ViewModel real | STT/TTS ac?sticos, ruido y llamadas reales |
 | 005 | ScenarioTest policy, tools, malicious AI proposals, timeouts | Proveedor remoto, que est? deshabilitado |
-| 006 | ContractTest, SharedFixturesTest y tests/test_contracts.py | Transporte OBD Android y hardware |
+| 006 | ContractTest, SharedFixturesTest, BluetoothObdTest y tests/test_contracts.py | Adaptador y vehículo físico; las pruebas OBD son fake |
 | 007 | ContractTest URI, ScenarioTest navigation | Ruta, ETA ni recepci?n real Maps/Waze |
 | 008 | ScenarioTest b?squeda, ambig?edad, confirmaci?n ?nica/caducada | Agenda y marcador de un dispositivo f?sico |
 | 009 | ScenarioTest denegaci?n/revocaci?n y PlatformMediaTest | Todas las variantes OEM |

@@ -109,3 +109,11 @@ La imagen AOSP usada no ofrece una voz española TTS local utilizable; la app mo
 visual y «Voz no disponible». STT/TTS acústicos no se han validado físicamente; el flujo de voz y sus errores sí
 se probaron con fakes. No se probaron un coche, Bluetooth OBD, Maps/Waze instalados, agenda física ni cuentas
 de streaming. No se midieron consumo ni latencia real de voz. No declarar esos criterios completos.
+
+## Sprint 3 — evidencia local nueva
+
+En `feat/sprint3-bluetooth-obd` se ejecutaron `python -m unittest discover -s tests -v` (12/12),
+`./gradlew.bat :core:test :testing:test --offline` con JDK 17 (52/52, incluidas 9 pruebas Bluetooth fake),
+`python scripts/check_repository.py` y `git diff --check` (correctos). La compilación de app, lint,
+instrumentación y firma se registrarán por separado cuando SDK 35 esté disponible. Los resultados de
+Sprint 2 anteriores no prueban el nuevo adaptador; no se realizó conexión física Bluetooth.

@@ -41,7 +41,7 @@ El modo de demostración sigue disponible y explícitamente etiquetado.
 
 ## Parcial o pendiente
 - Validación de un proveedor comercial/servidor real y telemetría consentida: pendientes. El APK Sprint 2 sí solicita INTERNET para la IA opcional.
-- AndroidObdProvider Bluetooth, reconexión, consultas de capacidades: pendientes. Parser no equivale a transporte.
+- En la rama Sprint 3 se implementan RFCOMM Bluetooth Classic, consultas de capacidades y reconexión limitada. Falta validación física con adaptador y coche.
 - POI real y ubicación, wake word, editor de widgets, Spotify SDK específico: pendientes.
 - No hay puente Android-Python activado; contrato v1 está preparado y probado con fixtures.
 - Cualificación en pantallas físicas, ruido, voz acústica, latencia y consumo: pendientes.
