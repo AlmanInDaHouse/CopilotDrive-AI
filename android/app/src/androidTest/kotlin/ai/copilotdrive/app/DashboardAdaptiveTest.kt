@@ -43,6 +43,9 @@ class DashboardAdaptiveTest {
     @Test fun landscape1280by720dp() = render(1280, 720)
     @Test fun portrait360by640dp() = render(360, 640)
     @Test fun largeFontCompact800by480dp() = render(800, 480, 1.5f)
+    @Test fun doubleFont800by480dp() = render(800, 480, 2f)
+    @Test fun largeFontPortrait360by640dp() = render(360, 640, 1.5f)
+    @Test fun shortLandscape640by360dp() = render(640, 360)
     @Test fun unavailableVehicleAndCapabilitiesRemainHonest() {
         compose.setContent { CopilotTheme { Surface {
             DashboardScreen(DashboardState(), {}, {}, {}, {}, {})

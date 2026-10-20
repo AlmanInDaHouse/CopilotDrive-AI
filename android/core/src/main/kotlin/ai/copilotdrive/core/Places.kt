@@ -97,6 +97,11 @@ class PlacesController(
         if (!hasLocationPermission()) return fail("PERMISSION_REQUIRED", "Concede ubicación aproximada al iniciar la búsqueda desde Lugares.")
         return try {
             val location = locationProvider.current()
+            if (generation != searchGeneration) return ToolResult.denied("places.search_nearby", "CANCELLED", "La búsqueda fue reemplazada o borrada.")
+            // Permission/consent can change while the location adapter is suspended.
+            if (!safeToExplore()) return fail("MOTION_UNVERIFIED", "La exploración se canceló al salir del entorno detenido.")
+            if (!canQuery()) return fail("CONSENT_REQUIRED", "Se revocó la autorización de lugares.")
+            if (!hasLocationPermission()) return fail("PERMISSION_REQUIRED", "Se revocó el permiso de ubicación.")
             mutable.value = mutable.value.copy(location = location)
             if (!location.usableAt(clock.now())) return fail("LOCATION_UNAVAILABLE", "La ubicación falta o está caducada. Reintenta la búsqueda.")
             if (!hasLocationPermission()) return fail("PERMISSION_REQUIRED", "Se revocó el permiso de ubicación.")
@@ -116,10 +121,13 @@ class PlacesController(
                 error = "La búsqueda se canceló o agotó el tiempo de espera.")
             throw cancelled
         }
-        catch (error: PlacesProviderError) { fail(error.code, error.message) }
-        catch (_: SecurityException) { fail("PERMISSION_REQUIRED", "Se revocó el permiso de ubicación.") }
-        catch (_: Exception) { fail("PROVIDER_ERROR", "No se pudo consultar el proveedor de lugares.") }
+        catch (error: PlacesProviderError) { failureForGeneration(searchGeneration, error.code, error.message) }
+        catch (_: SecurityException) { failureForGeneration(searchGeneration, "PERMISSION_REQUIRED", "Se revocó el permiso de ubicación.") }
+        catch (_: Exception) { failureForGeneration(searchGeneration, "PROVIDER_ERROR", "No se pudo consultar el proveedor de lugares.") }
     }
+    private fun failureForGeneration(expected: Long, code: String, message: String): ToolResult =
+        if (generation == expected) fail(code, message)
+        else ToolResult.denied("places.search_nearby", "CANCELLED", "La búsqueda fue reemplazada o borrada.")
     private fun fail(code: String, message: String): ToolResult {
         mutable.value = mutable.value.copy(results = emptyList(), selection = null, status = code, error = message)
         return ToolResult.denied("places.search_nearby", code, message)

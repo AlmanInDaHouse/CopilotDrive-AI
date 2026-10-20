@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -58,7 +59,7 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
                     text = { Column {
                         Text("Movimiento: ${customization.motion.name}. Desconocido no significa detenido. Confirma solo en un entorno de prueba detenido; no verifica aparcamiento.")
                         Row {
-                            Checkbox(checked = laboratoryMode, onCheckedChange = { laboratoryMode = it }, modifier = Modifier.testTag("layout-laboratory"))
+                            Checkbox(checked = laboratoryMode, onCheckedChange = { laboratoryMode = it }, modifier = Modifier.testTag("layout-laboratory").semantics { contentDescription = "Activar modo laboratorio" })
                             Text("Activar modo laboratorio", modifier = Modifier.padding(top = 12.dp))
                         }
                     } },
@@ -132,7 +133,7 @@ private fun SettingsScreen(
                 Eyebrow("VOZ Y PRIVACIDAD")
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Permitir motor STT del sistema\nPuede enviar audio a su proveedor", color = Muted, modifier = Modifier.weight(1f).padding(vertical = 16.dp))
-                    Switch(checked = state.preferences.allowSystemRecognition, onCheckedChange = { onSave(state.preferences.copy(allowSystemRecognition = it)) })
+                    Switch(modifier = Modifier.semantics { contentDescription = "Permitir motor STT del sistema; puede enviar audio a su proveedor" }, checked = state.preferences.allowSystemRecognition, onCheckedChange = { onSave(state.preferences.copy(allowSystemRecognition = it)) })
                 }
                 Text("Se prefiere reconocimiento local cuando está disponible. No hay escucha permanente.", color = Muted, fontSize = 13.sp)
                 Spacer(Modifier.height(12.dp))
@@ -146,11 +147,11 @@ private fun SettingsScreen(
                 Text(state.ttsStatus, color = if (state.voices.isEmpty()) Amber else Mint)
                 if (state.voices.isEmpty()) OutlinedButton(onClick = model::installVoiceData) { Text("Instalar datos de voz desde Android") }
                 Text("Velocidad de voz: ${"%.1f".format(rate)}")
-                Slider(value = rate, onValueChange = { rate = it }, onValueChangeFinished = { onSave(state.preferences.copy(rate = rate)) }, valueRange = 0.7f..1.3f)
+                Slider(modifier = Modifier.semantics { contentDescription = "Velocidad de voz" }, value = rate, onValueChange = { rate = it }, onValueChangeFinished = { onSave(state.preferences.copy(rate = rate)) }, valueRange = 0.7f..1.3f)
                 Text("Tono: ${"%.1f".format(pitch)}")
-                Slider(value = pitch, onValueChange = { pitch = it }, onValueChangeFinished = { onSave(state.preferences.copy(pitch = pitch)) }, valueRange = 0.7f..1.3f)
+                Slider(modifier = Modifier.semantics { contentDescription = "Tono de voz" }, value = pitch, onValueChange = { pitch = it }, onValueChangeFinished = { onSave(state.preferences.copy(pitch = pitch)) }, valueRange = 0.7f..1.3f)
                 OutlinedButton(onClick = onMicrophone, modifier = Modifier.heightIn(min = 56.dp)) { Text("Permitir micrófono y probar") }
-                OutlinedButton(onClick = model::testVoice, enabled = state.voices.isNotEmpty()) { Text("Probar voz seleccionada") }
+                OutlinedButton(onClick = { model.testVoice() }, enabled = state.voices.isNotEmpty()) { Text("Probar voz seleccionada") }
             }
         }
         item {
@@ -158,7 +159,7 @@ private fun SettingsScreen(
                 Eyebrow("MULTIMEDIA Y CONTACTOS")
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Usar audio de demostración", modifier = Modifier.weight(1f).padding(vertical = 16.dp))
-                    Switch(checked = state.demoMedia, onCheckedChange = onDemoMedia)
+                    Switch(modifier = Modifier.semantics { contentDescription = "Usar audio de demostración" }, checked = state.demoMedia, onCheckedChange = onDemoMedia)
                 }
                 Text("Para audio real, desactiva la demostración y concede acceso a notificaciones. Solo consultamos sesiones multimedia; no leemos ni guardamos el contenido de notificaciones.", color = Muted)
                 OutlinedButton(onClick = onMediaPermission, modifier = Modifier.heightIn(min = 56.dp).padding(top = 8.dp)) { Text("Autorizar sesiones multimedia") }
@@ -199,7 +200,7 @@ private fun SettingsScreen(
                 Text("Comandos locales · siempre activos", modifier = Modifier.padding(top = 12.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Activar IA externa", modifier = Modifier.weight(1f).padding(vertical = 16.dp))
-                    Switch(checked = state.preferences.ai.enabled, onCheckedChange = { enabled ->
+                    Switch(modifier = Modifier.semantics { contentDescription = "Activar IA externa" }, checked = state.preferences.ai.enabled, onCheckedChange = { enabled ->
                         if (enabled && !state.preferences.ai.consented) consentDialog = true
                         else onSave(state.preferences.copy(ai = state.preferences.ai.copy(enabled = enabled)))
                     })
@@ -208,7 +209,7 @@ private fun SettingsScreen(
                 OutlinedTextField(value = providerName, onValueChange = { providerName = it.take(80) }, label = { Text("Nombre del proveedor") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 OutlinedTextField(value = providerModel, onValueChange = { providerModel = it.take(100) }, label = { Text("Modelo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 Text("Tiempo de espera: ${timeout.toInt() / 1000} s")
-                Slider(value = timeout, onValueChange = { timeout = it }, valueRange = 3_000f..30_000f, steps = 8)
+                Slider(modifier = Modifier.semantics { contentDescription = "Tiempo de espera del proveedor" }, value = timeout, onValueChange = { timeout = it }, valueRange = 3_000f..30_000f, steps = 8)
                 Text("HTTPS obligatorio. HTTP local solo en APK debug para localhost o 10.0.2.2.", color = Muted, fontSize = 13.sp)
                 OutlinedButton(onClick = {
                     val changed = endpoint != state.preferences.ai.endpoint || providerModel != state.preferences.ai.model || providerName != state.preferences.ai.providerName
@@ -226,11 +227,11 @@ private fun SettingsScreen(
                 Text(if (state.credentialSaved) "Credencial guardada y oculta" else "No hay credencial", color = Muted)
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Herramientas estructuradas", modifier = Modifier.weight(1f))
-                    Switch(checked = state.preferences.ai.toolCalling, onCheckedChange = { onSave(state.preferences.copy(ai = state.preferences.ai.copy(toolCalling = it))) })
+                    Switch(modifier = Modifier.semantics { contentDescription = "Herramientas estructuradas" }, checked = state.preferences.ai.toolCalling, onCheckedChange = { onSave(state.preferences.copy(ai = state.preferences.ai.copy(toolCalling = it))) })
                 }
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Compartir contexto del vehículo", modifier = Modifier.weight(1f))
-                    Switch(checked = false, onCheckedChange = {}, enabled = false)
+                    Switch(modifier = Modifier.semantics { contentDescription = "Compartir contexto del vehículo"; stateDescription = "No disponible; solo se envía texto" }, checked = false, onCheckedChange = {}, enabled = false)
                 }
                 Text("En este sprint solo se envía el texto y el historial efímero. No se envían contactos, ubicación ni telemetría.", color = Muted, fontSize = 13.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
@@ -27,11 +28,11 @@ fun PlacesScreen(state: DashboardState, model: DashboardViewModel, onBack: () ->
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Lugares cercanos", style = MaterialTheme.typography.headlineMedium)
+                Text("Lugares cercanos", modifier = Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
                 OutlinedButton(onClick = onBack, modifier = Modifier.heightIn(min = 56.dp)) { Text("Volver") }
             }
             Text("Exploración solo en laboratorio detenido. No se comprueba el movimiento automáticamente.", color = Amber)
-            Row { Checkbox(checked = stopped, onCheckedChange = model::setPlacesStationary, modifier = Modifier.testTag("places-stopped")); Text("Estoy en un entorno detenido") }
+            Row { Checkbox(checked = stopped, onCheckedChange = model::setPlacesStationary, modifier = Modifier.testTag("places-stopped").semantics { contentDescription = "Estoy en un entorno detenido" }); Text("Estoy en un entorno detenido") }
         }
         item {
             DashboardCard {
@@ -46,8 +47,8 @@ fun PlacesScreen(state: DashboardState, model: DashboardViewModel, onBack: () ->
                     else OutlinedButton(onClick = { model.setPlacesConsent(false) }) { Text("Revocar autorización") }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Modo de prueba · datos ficticios")
-                    Switch(checked = places.demo, onCheckedChange = model::setDemoPlaces, modifier = Modifier.testTag("places-demo"))
+                    Text("Modo de prueba · datos ficticios", modifier = Modifier.weight(1f))
+                    Switch(checked = places.demo, onCheckedChange = model::setDemoPlaces, modifier = Modifier.testTag("places-demo").semantics { contentDescription = "Modo de prueba de lugares; datos ficticios" })
                 }
                 if (!state.placesConfigured && !places.demo) Text("Configura un proveedor o activa la demostración.", color = Amber)
             }
@@ -92,7 +93,7 @@ fun PlacesScreen(state: DashboardState, model: DashboardViewModel, onBack: () ->
                     setTextColor(android.graphics.Color.WHITE); textSize = 14f; movementMethod = LinkMovementMethod.getInstance()
                 } }, update = { view -> view.text = Html.fromHtml(attribution, Html.FROM_HTML_MODE_COMPACT) }) }
                 OutlinedButton(onClick = { place.providerId?.let(model::selectPlace) }, enabled = stopped,
-                    modifier = Modifier.heightIn(min = 56.dp).testTag("select-place-$index")) {
+                    modifier = Modifier.heightIn(min = 56.dp).testTag("select-place-$index").semantics { contentDescription = "Elegir destino ${place.name ?: "sin nombre"}"; this.selected = selected?.providerId == place.providerId }) {
                     Text(if (selected?.providerId == place.providerId) "Seleccionado" else "Elegir destino")
                 }
             }
