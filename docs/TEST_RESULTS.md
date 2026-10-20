@@ -1,12 +1,27 @@
 # Resultados ejecutados — 2026-10-20
 
-## Corrección posterior a la PR #1 (`fix/android-ci`)
+## Sprint 2 — rama local `feat/sprint2-voice-llm`
+
+Baseline antes de editar: Python 12/12, targets Gradle `:core:test :testing:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug` aprobados y `check_repository.py` aprobado. `main` `b3646df` tiene [Android run #6](https://github.com/AlmanInDaHouse/CopilotDrive-AI/actions/runs/39355399788) en **Success** con dos artefactos; es evidencia del código anterior a Sprint 2.
+
+Validación final local Windows/JDK 17/SDK 35:
+
+- Python unittest: **12/12**.
+- JVM: core **13/13**, testing **30/30**, app **2/2**; total **45/45**. Diez tests nuevos de ConversationProviderTest y una regresión de timeout TTS cubren respuesta de texto y herramientas, JSON inválido/truncado, 401/429/500/302, TLS, consentimiento, cambio de configuración, cancelación, memoria, aislamiento de telemetría, fallback local y respuesta visual intacta.
+- Instrumentación Android 15/API 35, emulador `CopilotDrive_API35`: **11/11**. Incluye prueba de cifrado Keystore, catálogo TTS y Chat Completions HTTP contra servidor loopback en el mismo emulador, sin credencial ni API comercial.
+- Lint debug: **0 errores, 10 avisos**. Assemble debug: **BUILD SUCCESSFUL**. `python scripts/check_repository.py`: aprobado. `git diff --check`: sin errores.
+- APK debug: `artifacts/CopilotDrive-AI-sprint2-debug.apk`, **11,762,683 bytes**, SHA-256 `67C2CAD8029F713E1B0C51578510B3E2D6C890C145838B048E976D87C910CD70`; firma debug v2 verificada, instalación `adb install -r` exitosa.
+
+Total automatizado final: **68/68** (12 Python + 45 JVM + 11 instrumentadas). La prueba HTTP loopback acredita el transporte y parser Android con una respuesta Chat Completions simulada. No acredita interoperabilidad comercial, voz acústica, motor STT externo ni calidad de síntesis. En el emulador API 35 el diagnóstico TTS observado fue «Motor TTS ausente o falló la inicialización» y **0 voces locales es-ES**; no se descargaron voces.
+
+La corrección del XML de red debug y la lectura del cuerpo del servidor de prueba exigieron repetir la instrumentación; la ejecución final citada arriba pasó. Los reportes originales están bajo `android/**/build/test-results` y `android/app/build/outputs/androidTest-results`.
+
+## Histórico: corrección posterior a la PR #1 (`fix/android-ci`)
 
 La PR #1 se fusionó en `main` como `42a3c90` (MVP `6e4cf95`). En esa revisión,
 CI Python terminó en SUCCESS y CI Android falló antes de Gradle, en
 `android-actions/setup-android@v3`: `Warning: Failed to find package 'tools'`.
-La rama local cambia a `@v4`, que ya no solicita ese paquete retirado. **El CI corregido
-no está verificado remotamente**: la rama aún no se ha subido y no existe una nueva ejecución.
+La rama de corrección cambió a `@v4`; posteriormente PR #2 se fusionó y el workflow de `main` completó con éxito.
 
 Validación local de esta corrección, Windows/JDK 17/SDK 35:
 

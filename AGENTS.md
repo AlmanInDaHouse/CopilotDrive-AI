@@ -7,6 +7,8 @@ Keep the Python/web prototype functional. Android must work without Python or AP
 `android/core` is pure Kotlin: contracts, policy, tools, orchestration, voice state machine.
 `android/testing` contains deterministic fakes. `android/app` owns Compose, ViewModel,
 DataStore and Android adapters. Inject dependencies through constructors; no domain Android imports.
+Sprint 2 AI contracts, response validation and ephemeral conversation live in `android/core`;
+HTTP, Android Keystore and consent UI live in `android/app`.
 Specifications live in `specs/000-product` through `specs/012-widgets-future`.
 JSON schema version 1 uses epoch milliseconds, nullable metrics, explicit source and availability.
 
@@ -17,6 +19,9 @@ Unknown motion is not parked. No advanced layout editor in this increment.
 All external actions pass deterministic tool policy; provider text never grants permission.
 No background microphone loop. Stop recognition/TTS on backgrounding. No audio/history logging.
 Contacts stay local. ACTION_DIAL only, with fresh confirmation. No implicit network consent.
+External AI sends text and bounded session history only after explicit consent; never send telemetry,
+contacts or location. Remote endpoints require HTTPS. Debug local HTTP is loopback only. Do not log
+request bodies or credentials. Model tool proposals must pass ToolRegistry and PolicyEngine.
 
 ## Build and test
 Python: `python -m unittest discover -s tests -v`.
