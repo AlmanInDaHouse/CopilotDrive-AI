@@ -14,5 +14,6 @@
 | 010 | Policy tests, scripts/check_repository.py y lint | Auditor?a de penetraci?n o CVE exhaustiva |
 | 011 | DashboardUiTest onboarding, AppFlowTest, instalaci?n adb debug | Firma de producci?n y distribuci?n |
 | 012 | WidgetDefinition en core; editor no expuesto | Editor a?n no implementado |
+| 013 (borrador) | Plan de matriz física y contratos de evidencia | Ninguna prueba física ejecutada para Sprint 4 |
 
 Los comandos, recuentos y resultados efectivos se mantienen en docs/TEST_RESULTS.md.

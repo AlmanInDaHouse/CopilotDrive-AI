@@ -7,6 +7,8 @@
 
 El protocolo usa Bluetooth Classic SPP/RFCOMM, no BLE. Solo consulta RPM (010C), velocidad (010D), temperatura de refrigerante (0105) y nivel de combustible (012F) si el vehículo lo soporta. El porcentaje de combustible puede faltar. `NO DATA`, tramas incompletas y PIDs no anunciados dan «No disponible». No se calcula autonomía. La lectura OBD no es un diagnóstico certificado. No se solicita VIN, no se guardan identificadores del vehículo y la telemetría no sale del teléfono.
 
+En emulador API 35 se comprobó el permiso Nearby devices y la indicación «No hay adaptadores emparejados». Esa prueba verifica la pantalla y el manejo sin adaptador; la compatibilidad RFCOMM real sigue pendiente de hardware.
+
 ## Validación física pendiente
 
 Registrar modelo de teléfono y Android, fabricante y firmware del adaptador, vehículo, emparejamiento, permiso, conexión, latencia, PIDs anunciados, desconexión y reconexión. En el mismo dispositivo comprobar STT/TTS, audio focus, proveedor de voz real, consultas locales sin Internet, fallo de TTS con respuesta escrita y confirmación del marcador. No ejecutar estas pruebas automáticamente ni considerar los fakes como prueba de interoperabilidad física.

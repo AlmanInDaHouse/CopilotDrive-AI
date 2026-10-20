@@ -5,8 +5,9 @@
 3. Push-to-talk, TTS, voces locales, cancelación y consentimiento.
 4. MediaSession con permiso de notificaciones y selección de sesión.
 5. Intents Maps/Waze, contactos locales, confirmación y ACTION_DIAL.
-6. Proveedor IA remoto opcional con configuración segura, timeout y minimización (pendiente).
-7. Bluetooth OBD de solo lectura con transporte simulado y validación de hardware (pendiente).
-8. Onboarding, diagnósticos y APK de revisión; release firmada tras validación física.
+6. Proveedor IA remoto opcional con configuración segura, timeout y minimización: implementado en Sprint 2; interoperabilidad comercial pendiente.
+7. Bluetooth OBD de solo lectura con RFCOMM, harness serial, selector y dashboard: implementado en Sprint 3; validación física pendiente.
+8. Onboarding, diagnósticos y APK debug de revisión: implementados; release firmada tras validación física.
+9. Sprint 4 propuesto: matriz física OBD y STT/TTS, seguida de interoperabilidad LLM con consentimiento y sin telemetría externa.
 
 Estado real, sin equiparar código con prueba física: IMPLEMENTATION_STATUS.md y TEST_RESULTS.md.

@@ -1,6 +1,6 @@
 # Limitaciones conocidas
 
-PR #1 y #2 están fusionadas; el workflow Android más reciente de `main` (`b3646df`) terminó correctamente. Sprint 2 permanece en una rama local sin CI remoto.
+PR #1, #2 y #3 están fusionadas. Sprint 3 permanece en una rama local sin CI remoto propio; el build, lint y tests locales se describen en `SPRINT3_REPORT.md`.
 
 | Área | Limitación e impacto | Próxima validación/cambio |
 |---|---|---|
@@ -18,7 +18,7 @@ PR #1 y #2 están fusionadas; el workflow Android más reciente de `main` (`b364
 | POI | Puerto/fake de pruebas; herramienta real siempre NOT_CONFIGURED | Proveedor autorizado, ubicación y cuotas |
 | Estado de conducción | UNKNOWN; confirmar entorno de prueba no certifica PARKED | Fuente fiable antes de funciones avanzadas |
 | UI | Dashboard adaptable, sin editor de widgets; selección de voces puede ser larga | 800×480 y 360×640 revisados con scroll; falta tamaño de fuente máximo y hardware físico |
-| Distribución | APK debug con clave del entorno; Sprint 2 solo local y sin release | CI de la nueva rama tras autorización de push; firma de producción fuera del repositorio |
+| Distribución | APK Sprint 3 debug firmado localmente; sin release ni CI remoto de la rama | CI tras autorización de push; firma de producción fuera del repositorio |
 | Dependencias | Versiones estables fijadas, avisos de actualización de lint; no auditoría CVE exhaustiva | Auditoría y renovación controlada de la matriz |
 | Python heredado | Servidor local sin auth; LLM opcional envía métricas y texto según README original | Mantener en localhost; puente Android futuro requiere nuevo diseño de consentimiento |
 
