@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0b1020"><title>OpenCar Copilot | MVP</title>
+<link rel="stylesheet" href="/style.css"><script defer src="/app.js"></script>
+</head>
+<body>
+<div class="shell">
+<header class="top"><div class="brand"><span class="logo">◈</span><div><strong>OPENCAR <span>COPILOT</span></strong><small>Community edition · MVP experimental</small></div></div><div class="status" id="status">● Conectando</div></header>
+<div class="notice">ENTORNO DE PRUEBA · No utilizar la interfaz mientras se conduce. La telemetría es orientativa y no sustituye al cuadro de instrumentos.</div>
+<main>
+<section class="hero"><div><p class="eyebrow">TU COCHE. TU COPILOTO.</p><h1>Una voz para entender <em>tu vehículo.</em></h1><p>Monitorización orientativa, comandos naturales y entretenimiento. Datos reales por OBD-II cuando estén disponibles.</p><div class="source" id="source">Cargando origen...</div></div><div class="hero-mark" aria-hidden="true"><div class="ring">◉</div><span>READ ONLY</span></div></section>
+<section class="metrics" aria-label="Telemetría">
+<div class="metric"><span>VELOCIDAD</span><div><b id="speed">—</b><small>km/h</small></div><p>Sensor OBD-II</p></div>
+<div class="metric"><span>REVOLUCIONES</span><div><b id="rpm">—</b><small>rpm</small></div><p>Motor</p></div>
+<div class="metric"><span>REFRIGERANTE</span><div><b id="coolant">—</b><small>°C</small></div><p>Temperatura</p></div>
+<div class="metric"><span>COMBUSTIBLE</span><div><b id="fuel">—</b><small>%</small></div><p>Si está disponible</p></div>
+<div class="metric"><span>VOLTAJE</span><div><b id="voltage">—</b><small>V</small></div><p>En el adaptador</p></div>
+</section>
+<div class="lower"><section class="panel assistant"><div class="panel-head"><div><p class="eyebrow">COPILOTO</p><h2>Habla con tu coche</h2></div><div class="orb" id="orb">✦</div></div><div class="conversation" id="conversation" aria-live="polite"><div class="bubble ai">Hola. Pídeme «estado del coche» o «pon música». Por defecto funciono sin una API de IA.</div></div><form id="askForm"><input id="askInput" type="text" maxlength="400" placeholder="Pregunta por la temperatura, las rpm..." aria-label="Consulta"><button type="submit">Enviar ↗</button></form><div class="mic-row"><button class="mic" id="mic" type="button">🎙 Hablar (detenido)</button><label><input id="speak" type="checkbox" checked> Responder con voz</label></div><p class="hint" id="speechHint">Reconocimiento de voz sujeto a compatibilidad del navegador. Puede usar servicios externos.</p></section>
+<section class="panel side"><p class="eyebrow">ESTADO Y SONIDO</p><h2>Alertas y música local</h2><div class="alerts" id="alerts">Sin alertas de umbral en este momento.</div><hr><p class="small">Selecciona archivos de audio que tengas derecho a reproducir. La música se reproduce en este navegador, no en Spotify.</p><input type="file" id="files" accept="audio/*" multiple><div class="player"><button type="button" id="previous">⏮</button><button type="button" id="play">▶</button><button type="button" id="next">⏭</button><span id="track">Sin pistas cargadas</span></div><audio id="audio" preload="none"></audio></section></div>
+</main><footer>OpenCar Copilot · Prototipo local · Sin control de actuadores · Código abierto</footer>
+</div></body></html>
