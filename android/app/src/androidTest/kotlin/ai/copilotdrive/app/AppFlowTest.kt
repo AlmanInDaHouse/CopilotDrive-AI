@@ -8,6 +8,27 @@ import org.junit.Test
 class AppFlowTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
 
+    @Test fun placesWithoutConsentOrProviderCannotSearch() {
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("onboarding").fetchSemanticsNodes().isNotEmpty() ||
+                compose.onAllNodesWithTag("dashboard").fetchSemanticsNodes().isNotEmpty()
+        }
+        if (compose.onAllNodesWithTag("onboarding").fetchSemanticsNodes().isNotEmpty())
+            compose.onNodeWithTag("accept-onboarding").performScrollTo().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("dashboard").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("open-places").performClick()
+        val provider = if (BuildConfig.PLACES_ANDROID_API_KEY.isBlank()) "Proveedor: NOT_CONFIGURED" else "Proveedor: Google Places"
+        compose.onNodeWithTag("places-screen").performScrollToNode(hasText(provider))
+        compose.onNodeWithText(provider).assertIsDisplayed()
+        compose.onNodeWithTag("places-screen").performScrollToNode(hasTestTag("places-stopped"))
+        compose.onNodeWithTag("places-stopped").performClick()
+        compose.onNodeWithTag("places-screen").performScrollToNode(hasTestTag("search-RESTAURANT"))
+        compose.onNodeWithTag("search-RESTAURANT").assertIsNotEnabled()
+        compose.onNodeWithTag("places-screen").performScrollToNode(hasText("Volver"))
+        compose.onNodeWithText("Volver").performClick()
+        compose.onNodeWithTag("dashboard").assertExists()
+    }
+
     @Test fun onboardingToFuelQueryThroughRealViewModel() {
         compose.waitUntil(10_000) {
             compose.onAllNodesWithTag("onboarding").fetchSemanticsNodes().isNotEmpty() ||

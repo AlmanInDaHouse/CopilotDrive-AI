@@ -31,6 +31,13 @@ android {
     kotlinOptions { jvmTarget = "17" }
     lint { abortOnError = true; checkReleaseBuilds = true }
 }
+// Opt-in static compiler evidence; does not change runtime behavior or required CI.
+composeCompiler {
+    if (providers.gradleProperty("composeReports").isPresent) {
+        reportsDestination = layout.buildDirectory.dir("compose-reports")
+        metricsDestination = layout.buildDirectory.dir("compose-metrics")
+    }
+}
 dependencies {
     implementation(project(":core"))
     implementation(platform("androidx.compose:compose-bom:2025.04.01"))

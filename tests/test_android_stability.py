@@ -13,12 +13,30 @@ from qualify_android import QualificationError
 
 
 class AndroidStabilityTests(unittest.TestCase):
+    def test_benchmark_protection_is_verified_even_when_instrumentation_raises(self):
+        report = {}
+        shell = Mock(side_effect=lambda *args: 'package:/data/base.apk' if args[0]=='pm' else 'abc  file')
+        with self.assertRaises(RuntimeError):
+            with stability.protected_debug_state(SimpleNamespace(shell=shell), report):
+                raise RuntimeError('injected instrumentation timeout')
+        self.assertEqual('PRESERVED', report['protectedDebugState'])
+        hashes = iter(('before file', 'layout file', 'after file', 'layout file'))
+        shell = Mock(side_effect=lambda *args: 'package:/data/base.apk' if args[0]=='pm' else next(hashes))
+        with self.assertRaises(QualificationError):
+            with stability.protected_debug_state(SimpleNamespace(shell=shell), report):
+                pass
+        self.assertEqual('FAILED', report['protectedDebugState'])
+
     def test_older_api_cannot_implicitly_reinstall_benchmark_data(self):
         for api in (26, 30, 33):
             with self.assertRaises(QualificationError):
                 benchmark.require_safe_compilation_api(api)
         benchmark.require_safe_compilation_api(34)
         benchmark.require_safe_compilation_api(35)
+        for api in (26, 30, 35):
+            benchmark.require_safe_compilation_api(api, 'Ignore')
+        with self.assertRaises(QualificationError):
+            benchmark.require_safe_compilation_api(35, 'unknown')
 
     def test_adb_response_does_not_imply_android_framework_is_running(self):
         for response in ('Service activity: not found', '', 'Service package: found'):
