@@ -1,34 +1,35 @@
-# Sprint 8 priorizado — pruebas físicas consentidas
+# Siguiente sprint recomendado: 9 — validación física consentida
 
-Sprint 6 se fusionó por PR #7 en main `1328077ff16d6487b4be995aae474dfc8452d345`.
-Android y Tests del merge: success. Sprint 7 está en rama local
-`feat/sprint7-device-qualification`; revisar SPRINT7_REPORT, TEST_RESULTS,
-ACCESSIBILITY_AUDIT, PERFORMANCE_BASELINE y DEVICE_QUALIFICATION antes de publicar.
-No se ha ejecutado push, merge ni release de Sprint 7.
+Sprint 7 está fusionado por PR #8 en main `328ffec4457d9badd3569413ceff0eb7de153954`.
+Tests y Android del merge terminaron en success. Sprint 8 permanece en la rama
+local `feat/sprint8-performance-readiness`, sin push, PR, merge ni release.
+Consultar SPRINT8_REPORT, PERFORMANCE_COMPARISON, STABILITY_TEST_REPORT y
+RELEASE_READINESS para la evidencia local y sus límites.
 
-1. **P0, teléfono autorizado:** descubrimiento pasivo, confirmación humana antes de
-   instalar/hacer pruebas activas; API/modelo y APK exactos. TalkBack manual con
-   fuente ampliada, permisos, respuesta larga y editor; voz es-ES audible con
-   confirmación del usuario. Interrupción/retorno de audio focus y segundo plano.
-2. **P0, ELM327 y coche detenido autorizados:** emparejamiento, RFCOMM, inicialización,
-   PIDs, NO DATA, respuesta parcial, timeout, permiso revocado, reconexión y simulador.
-   Comparar solo lecturas permitidas, sin VIN, MAC completa ni comandos libres.
-3. **P1, rendimiento en teléfono:** repetir muestras bajo condiciones estables;
-   preparar variante benchmark cercana a release y Macrobenchmark si se necesita
-   TTFD/frame timing comparable. Medir recomposiciones, ciclos de navegación,
-   memoria sostenida y energía antes de fijar presupuestos. No extrapolar emulador.
-4. **P1, servicios opcionales:** configurar proyecto/cuota/consentimiento separado
-   de costes para IA y Google Places. Probar HTTPS/401/429/5xx/cancelación/red y
-   ubicación coarse/revocación. Fakes/loopback no prueban producción comercial.
-5. **P1, interoperabilidad:** reproductores autorizados y callbacks MediaSession,
-   GPS, Maps/Waze instalados y contactos ficticios. Un intent no acredita ruta/ETA.
-6. **P2, recuperación OEM:** LMK real, permisos revocados por Android, varias APIs
-   desde minSdk26 y densidades/insets físicos. Corregir solo fallos reproducidos.
+1. Teléfono autorizado: descubrimiento pasivo, presentar APK/API/modelo y operaciones,
+   obtener consentimiento antes de instalar o ejecutar. STT/TTS es-ES audible con
+   confirmación humana, cancelar, audio focus, ruido y recuperación. TalkBack/insets.
+2. ELM327 Classic y coche detenido autorizados: RFCOMM, init, capacidades/PIDs de
+   lectura, latencia/NO DATA, timeout, permiso revocado, desconexión, cierre y vuelta
+   al simulador. Sin VIN/CAN libre/limpieza de averías ni conexión automática.
+3. Rendimiento: repetir Macrobenchmark en teléfono bajo condiciones estables.
+   No extrapolar el emulador ni convertir cotas del harness en tiempos de app.
+   Medir con profiler recomposiciones, memoria/heap y consumo antes de nuevos cambios.
+4. Cobertura API26/30: preparar AVDs oficiales independientes cuando se acuerden
+   descarga y espacio. Repetir permisos/Compose/DataStore/voz/Bluetooth/MediaSession,
+   lifecycle/rotación y recuperación; minSdk26 no basta como evidencia.
+5. Proveedores opcionales: endpoint/credencial/proyecto de prueba, cuota y
+   consentimiento de coste independientes para IA y Places. Revocación, cancelación,
+   errores HTTP, atribuciones y coarse; nada comercial en CI o logs.
+6. Interoperabilidad: reproductores autorizados/callbacks, destinos ficticios
+   Maps/Waze y contactos ficticios con confirmación ACTION_DIAL. Sin llamada
+   automática ni afirmación de ruta/ETA por abrir un intent.
 
-Mantener UNKNOWN como desconocido, edición solo de laboratorio y contexto vehicular
-excluido de IA. No añadir escucha permanente, servicio de micrófono ni tools de layout.
+Procedimientos y acta: PHYSICAL_TEST_PROCEDURES.md. Mantener PHYSICALLY_VERIFIED=PENDING
+hasta observación humana ligada al APK. No ampliar contexto IA, edición en marcha,
+escucha permanente ni servicios prolongados de micrófono.
 
-Publicar PR solo después de autorización explícita: revisar diff y commits contra
-main, ejecutar suites/firma/hash, push de la rama, abrir PR a main con SPRINT7_REPORT
-y esperar ambos workflows de la nueva rama. El CI del merge de Sprint 6 no es CI
-de Sprint 7. Merge y release requieren decisiones independientes posteriores.
+Para publicar una PR posteriormente y con autorización: revisar `git diff main...HEAD`,
+repetir checks si cambia código, ejecutar `git push -u origin feat/sprint8-performance-readiness`
+y abrir PR a main con SPRINT8_REPORT y evidencia. Esperar ambos workflows de esa rama:
+el CI del merge de Sprint 7 no es CI de Sprint 8. Merge y release son pasos separados.

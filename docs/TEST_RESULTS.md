@@ -1,6 +1,52 @@
+# Sprint 8 — resultados ejecutados, 2026-10-20
+
+Base main328ffec, Sprint 7/PR#8 fusionado, Android/Tests del merge success.
+Sprint 8 local, sin push/PR/merge/release. App debug compilada desde 259af8d;
+harness final de benchmark b9f3d9f. Los commits de herramientas/documentación
+posteriores a259af8d no cambian el APK de la app.
+
+| Suite funcional | Baseline Sprint 7 repetido | Sprint 8 final | Fallos/omitidas |
+| --- | ---: | ---: | ---: |
+| Python | 23 | 36 | 0/0 |
+| Core JVM | 38 | 43 | 0/0 |
+| Harness JVM | 64 | 67 | 0/0 |
+| App unit | 6 | 6 | 0/0 |
+| Android instrumented API35 | 30 | 32 | 0/0 |
+| Casos distintos | 161 | 184 | 0/0 |
+
+Python: python -m unittest discover -s tests -v. JVM/app/lint/build:
+scripts/android.ps1 :core:test :testing:test :app:testDebugUnitTest :app:lintDebug
+:app:assembleDebug :app:assembleDebugAndroidTest :app:assembleBenchmark
+:macrobenchmark:assembleBenchmark -PenableMacrobenchmark. No se fuerzan repeticiones
+de tareas UP-TO-DATE con fuentes idénticas. Lint 0 errores/12 avisos existentes.
+Instrumentación final ejecutada con ambos APK instalados mediante install-r y
+am instrument -w para evitar la desinstalación final de Gradle: OK(32tests).
+Log ignorado artifacts/sprint8/instrumented.log; XML JVM y jvm-summary.json.
+Repository check y git diff check correctos. Workflows existentes conservados.
+
+Benchmarks y smokes no sumados al total:20 muestras externas antes/después,
+7 escenarios Macrobenchmark×20 iteraciones,20 ciclos UI sostenidos+20 reinicios,
+repetición1 ciclo de permiso denegado,100 ciclos internos por escenario fake,
+matriz11 displays y recuperación offline/rotación. Detalle exacto y fallos de
+intentos anteriores en SPRINT8_REPORT/PERFORMANCE_COMPARISON/STABILITY_TEST_REPORT.
+No tests omitidos para conseguir verde. El baseline conectado de Gradle desinstaló
+la app del emulador y requirió reinstalar/onboarding; ese estado previo no se declara
+restaurado. Se evitó repetirlo usando instrumentación directa. Solo API35 ejecutada; API26/30 PENDING.
+
+APK: artifacts/sprint8/CopilotDrive-AI-sprint8-debug.apk (ignorado), paquete
+ai.copilotdrive.app, minSdk 26/target 35, firma Android Debug verificada,
+certificado SHA256 ad561b54e005e27e4ca2873963ee7f6c34c4e246feb9ea76aa4cc2e2eb476a8a.
+SHA256 APK:
+`C23F86E1B7DC7F3DEA05D9AF6E41374EF2B79A58D1227B302B7CA1AB12400EA2`.
+Clave Places vacía, sin credenciales/payloads comerciales en fuentes/artefacto
+configurado. Comprobación por patrones y límites de auditoría en RELEASE_READINESS.
+Ninguna firma/publicación de producción. Teléfono/acústica/OBD/servicios reales PENDING.
+
+## Historial de sprints anteriores
+
 # Resultados ejecutados — 2026-10-20
 
-## Sprint 7 — rama local `feat/sprint7-device-qualification`
+## Sprint 7 — evidencia histórica de la rama después fusionada por PR #8
 
 Base `1328077ff16d6487b4be995aae474dfc8452d345`, Sprint 6/PR #7 fusionada.
 Workflows del merge comprobados por GitHub API: Android y Tests success; no son

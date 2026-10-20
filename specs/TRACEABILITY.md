@@ -13,7 +13,9 @@
 | 009 | ScenarioTest denegaci?n/revocaci?n y PlatformMediaTest | Todas las variantes OEM |
 | 010 | Policy tests, scripts/check_repository.py y lint | Auditor?a de penetraci?n o CVE exhaustiva |
 | 011 | DashboardUiTest onboarding, AppFlowTest, instalaci?n adb debug | Firma de producci?n y distribuci?n |
-| 012 | WidgetDefinition en core; editor no expuesto | Editor a?n no implementado |
+| 012 | DashboardLayoutTest, DashboardCustomizationTest, LayoutPreferencesTest, editor Compose y DataStore | Sin prueba OEM, editor no expuesto a IA |
 | 013 | DiagnosticsTest, BluetoothObdTest, ScenarioTest, AppFlowTest Device Lab, Sprint2PlatformTest HTTP loopback, matriz manual | Sin teléfono, adaptador, coche ni proveedor remoto real validados físicamente |
+| 014 | DeviceQualificationTest, qualify_android y recuperacion emulada | Sin promocion a evidencia fisica |
+| 015 | PerformanceReadinessTest, StabilityScenarioTest, StabilityJourneyTest, runners de estabilidad/benchmark y comparacion | Emulador no representa telefono; PSS no prueba fuga; benchmark no es test funcional |
 
 Los comandos, recuentos y resultados efectivos se mantienen en docs/TEST_RESULTS.md.

@@ -9,7 +9,7 @@ Keep the Python/web prototype functional. Android must work without Python or AP
 DataStore and Android adapters. Inject dependencies through constructors; no domain Android imports.
 Sprint 2 AI contracts, response validation and ephemeral conversation live in `android/core`;
 HTTP, Android Keystore and consent UI live in `android/app`.
-Specifications live in `specs/000-product` through `specs/014-device-qualification`.
+Specifications live in `specs/000-product` through `specs/015-performance-readiness`.
 JSON schema version 1 uses epoch milliseconds, nullable metrics, explicit source and availability.
 
 ## Safety and privacy
@@ -59,6 +59,28 @@ in-flight writes are cancelled when safety is revoked. No layout tool exposed to
 Always retain fixed voice status/PTT, settings and telemetry-source indicator. Preserve
 LegacyDashboardScreen as the Sprint 5 reference. Execute DashboardLayoutTest before
 editor changes; record actual dp/resolution/fontScale evidence separately from hardware.
+
+Sprint 8: distinguish StartupTimingMetric TTID/TTFD from external am-start/UI probe
+bounds. Compose ReportDrawnWhen requires loaded preferences, onboarding, restored
+layout and first vehicle snapshot; optional voice/network never gate textual use.
+Macrobenchmark is opt-in (-PenableMacrobenchmark), release-derived, non-debuggable,
+debug-signed and isolated as ai.copilotdrive.app.benchmark. Never add benchmark
+warnings or unstable budgets to required CI. Only explicit EMULATOR quality warning
+may be suppressed for emulator evidence. See docs/BENCHMARK_RUNBOOK.md.
+Run ADB consumers sequentially. stability_android and benchmark_android refuse physical
+targets; preserve preferences/layout and restore display/permission overrides. PSS
+growth alone cannot prove a leak. Keep raw Perfetto/device logs ignored and review
+before sharing. No emulator/automation can produce a human acoustic observation.
+Provider credential lookup may suspend: recheck consent AFTER the lookup and before
+transport. Keystore IO is serialized off Main; never cache plaintext credentials.
+ADB and boot_completed do not establish framework readiness: check ActivityManager
+before instrumentation. Runners never reboot automatically. CompilationMode.None
+is guarded to API34+ because older resets may reinstall data; prepare Ignore safely
+before API26/30 benchmarking. Scroll gestures must move content and produce frames;
+do not turn zero captured frames into zero jank. Preserve failed attempts.
+connectedDebugAndroidTest may uninstall the app/data when finished. For an emulator
+whose state must survive, use install -r and am instrument directly; connected CI
+tests belong on disposable AVDs. Record any preservation incident explicitly.
 
 Sprint 7: `DeviceQualification` reuses diagnostic EvidenceLevel and enforces build/API/model,
 preconditions, method and observation provenance. CompatibilityStatus is independent of

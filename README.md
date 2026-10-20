@@ -7,10 +7,13 @@ El prototipo Python/web se conserva y funciona por separado.
 **Versión experimental para laboratorio detenido.** No controla el vehículo. No es Android Auto, AAOS ni CarPlay.
 El movimiento del vehículo se considera desconocido; la velocidad del simulador no permite deducirlo.
 
+Sprint 7 está fusionado por PR #8; Sprint 8 permanece en rama local sin publicación.
+Evidencia actual, APK y pendientes físicos: [informe Sprint 8](docs/SPRINT8_REPORT.md).
+
 ### Probar Android
 
 1. Instala el APK debug generado en `android/app/build/outputs/apk/debug/app-debug.apk`.
-   En esta sesión también se entrega una copia en `artifacts/CopilotDrive-AI-debug.apk` (no versionada).
+   La copia de Sprint 8 se entrega en `artifacts/sprint8/CopilotDrive-AI-sprint8-debug.apk` (no versionada).
 2. Abre **CopilotDrive AI** y completa el aviso inicial.
 3. Pulsa **Probar consulta**: se consulta combustible simulado (42 %) y se intenta TTS con una voz local instalada.
 4. Para voz real: **Ajustes → voz**. Si no hay reconocimiento local, autoriza expresamente el motor del sistema;
@@ -20,9 +23,10 @@ El movimiento del vehículo se considera desconocido; la velocidad del simulador
    Para contactos, activa su permiso en Ajustes; «llama a Mercedes» pide elegir si hay varias coincidencias y
    confirmar antes de abrir el marcador. Maps/Waze se abren con «llévame a Gran Vía, Madrid» o «Waze Madrid».
 
-El audio de demostración cambia metadatos/controles pero no reproduce sonido. El LLM es opcional:
-esta entrega Android usa el resolver local; el proveedor remoto aún no está implementado.
-Bluetooth OBD, POI real, wake word y firma de producción están pendientes.
+El audio de demostración cambia metadatos/controles pero no reproduce sonido. Chat Completions
+está implementado como proveedor opcional, con consentimiento y sin telemetría externa.
+OBD-II Classic de solo lectura y Google Places opcional están implementados; sus pruebas
+físicas/comerciales siguen pendientes. Wake word y firma de producción no están implementados.
 
 ### Compilar y comprobar
 

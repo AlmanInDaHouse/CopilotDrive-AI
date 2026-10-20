@@ -1,5 +1,9 @@
 # Sprint 7 — Device Qualification, Accessibility, Performance & Reliability
 
+Nota posterior (Sprint 8, 2026-10-20): este informe conserva el estado histórico de
+la entrega local. Sprint 7 ya se fusionó por PR #8 en `328ffec`, con Android y Tests
+del merge en success. La rama actualmente local es Sprint 8; ver SPRINT8_REPORT.
+
 Entrega local de revisión, 2026-10-20 (Europe/Madrid). **Calificación física PENDING**.
 APK convencional para Android abierto; sin Android Auto, AAOS o CarPlay.
 
