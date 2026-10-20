@@ -130,8 +130,10 @@ enum class CapabilityStatus { AVAILABLE, PERMISSION_REQUIRED, UNSUPPORTED, NOT_C
 data class Capability(val id: String, val status: CapabilityStatus, val reason: String)
 enum class MotionState { UNKNOWN, MOVING, PARKED }
 data class WidgetDefinition(
-    val id: String, val type: String, val title: String, val minWidth: Int, val minHeight: Int,
-    val capabilities: Set<String>, val configurationSchema: String, val visibilityRules: Set<String>,
+    val id: String, val type: WidgetType, val title: String, val minWidth: Int, val minHeight: Int,
+    val capabilities: Set<WidgetCapability>, val configurationSchema: String, val visibilityRules: Set<String>,
+    val sizes: Set<WidgetSize> = setOf(WidgetSize.COMPACT, WidgetSize.EXPANDED),
+    val schemaVersion: Int = 1,
 )
 
 object ContractJson {

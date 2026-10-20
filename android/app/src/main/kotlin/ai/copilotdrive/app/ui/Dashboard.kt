@@ -43,7 +43,7 @@ fun CopilotTheme(content: @Composable () -> Unit) {
 }
 
 @Composable
-fun DashboardScreen(
+fun LegacyDashboardScreen(
     state: DashboardState,
     onSettings: () -> Unit,
     onListen: () -> Unit,
@@ -142,18 +142,22 @@ fun metricLabel(metric: Metric?): String {
 }
 
 @Composable
-private fun VehicleCard(vehicle: VehicleSnapshot?, modifier: Modifier = Modifier) {
+internal fun VehicleCard(vehicle: VehicleSnapshot?, modifier: Modifier = Modifier, compact: Boolean = false) {
     DashboardCard(modifier.fillMaxWidth()) {
         Eyebrow(if (vehicle?.simulationMode == true) "01 / VEHÍCULO SIMULADO" else "01 / VEHÍCULO OBD")
         Spacer(Modifier.height(18.dp))
         Text("Combustible", color = Muted)
-        Text(metricLabel(vehicle?.fuelLevelPercent), fontSize = 44.sp, fontWeight = FontWeight.Light, color = Mint, modifier = Modifier.testTag("fuel-value"))
+        Text(metricLabel(vehicle?.fuelLevelPercent), fontSize = if (compact) 30.sp else 40.sp, fontWeight = FontWeight.Light, color = Mint, modifier = Modifier.testTag("fuel-value"))
         val fuel = vehicle?.fuelLevelPercent
         val fraction = if (fuel?.availability in setOf(Availability.AVAILABLE, Availability.SIMULATED)) ((fuel?.value ?: 0.0) / 100).toFloat().coerceIn(0f, 1f) else 0f
         LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp), color = Mint, trackColor = Color(0xFF2B3B34))
         MetricRow("Velocidad", metricLabel(vehicle?.speedKmh))
+        MetricRow("RPM", metricLabel(vehicle?.engineRpm))
         MetricRow("Refrigerante", metricLabel(vehicle?.coolantTemperatureC))
-        MetricRow("Autonomía", metricLabel(vehicle?.vehicleRangeKm))
+        if (!compact) {
+            MetricRow("Autonomía", metricLabel(vehicle?.vehicleRangeKm))
+        }
+        Text("Estado: ${vehicle?.fuelLevelPercent?.availability?.name ?: "DISCONNECTED"}", color = Amber, fontSize = 12.sp)
         Text(if (vehicle?.simulationMode == true) "Datos ficticios" else if (vehicle?.connectionStatus == ConnectionStatus.CONNECTED) "Lecturas OBD · ${vehicle.source}" else "OBD sin conectar",
             color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp))
     }
@@ -161,20 +165,20 @@ private fun VehicleCard(vehicle: VehicleSnapshot?, modifier: Modifier = Modifier
 
 @Composable private fun MetricRow(name: String, value: String) {
     Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-        Text(name, color = Muted, fontSize = 14.sp)
-        Text(value, fontSize = 14.sp)
+        Text(name, color = Muted, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Text(value, fontSize = 14.sp, modifier = Modifier.weight(1f))
     }
 }
 
 @Composable
-private fun MediaCard(media: MediaSnapshot, artwork: Bitmap?, onMedia: (MediaControl) -> Unit, modifier: Modifier = Modifier) {
+internal fun MediaCard(media: MediaSnapshot, artwork: Bitmap?, onMedia: (MediaControl) -> Unit, modifier: Modifier = Modifier, compact: Boolean = false) {
     DashboardCard(modifier.fillMaxWidth()) {
         Eyebrow(if (media.simulated) "02 / AUDIO SIMULADO" else "02 / AUDIO ANDROID")
         Spacer(Modifier.height(18.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-            if (artwork != null) {
+            if (artwork != null && !compact) {
                 Image(artwork.asImageBitmap(), contentDescription = "Carátula", contentScale = ContentScale.Crop, modifier = Modifier.size(68.dp).clip(RoundedCornerShape(12.dp)))
-            } else Canvas(Modifier.size(68.dp).background(Color(0xFF263B39), RoundedCornerShape(12.dp))) {
+            } else if (!compact) Canvas(Modifier.size(68.dp).background(Color(0xFF263B39), RoundedCornerShape(12.dp))) {
                 drawCircle(Mint.copy(alpha = 0.25f), size.minDimension * 0.36f, style = Stroke(2.dp.toPx()))
                 drawCircle(Mint.copy(alpha = 0.6f), size.minDimension * 0.24f, style = Stroke(2.dp.toPx()))
                 drawCircle(Mint, size.minDimension * 0.06f)
@@ -225,7 +229,7 @@ private fun NavigationCard(destination: String?, onListen: () -> Unit, modifier:
     }
 }
 
-@Composable private fun AssistantOrb(state: VoiceState) {
+@Composable internal fun AssistantOrb(state: VoiceState) {
     val active = state in setOf(VoiceState.LISTENING, VoiceState.SPEAKING)
     val radius by animateFloatAsState(if (active) 0.40f else 0.28f, label = "voice-state")
     Canvas(Modifier.size(68.dp)) {

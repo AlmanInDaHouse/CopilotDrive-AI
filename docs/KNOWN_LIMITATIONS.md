@@ -1,6 +1,7 @@
 # Limitaciones conocidas
 
-PR #1 a #4 están fusionadas. Sprint 4 está en una rama local sin CI remoto propio; los resultados actuales se describen en `SPRINT4_REPORT.md`.
+Base Sprint 6: Sprint 5 fusionado por PR #6, main `2099b9d`. La rama Sprint 6 solo
+es local; evidencia de este incremento en `SPRINT6_REPORT.md`, sin CI remoto propio.
 
 | Área | Limitación e impacto | Próxima validación/cambio |
 |---|---|---|
@@ -15,10 +16,10 @@ PR #1 a #4 están fusionadas. Sprint 4 está en una rama local sin CI remoto pro
 | Carátulas | Solo bitmaps entregados por MediaSession; URI de carátula remota no descargada | Adaptador de imágenes local con límites, si se justifica |
 | Navegación | Solo apertura intent; no puede verificar ruta activa, ETA ni distancia | Prueba con apps Maps/Waze instaladas; SDK autorizado para rutas integradas |
 | Contactos | Consulta local y ACTION_DIAL; no llamada automática. Muestra hasta cinco números | Validar agenda física, nombres duplicados y accesibilidad |
-| POI | Puerto/fake de pruebas; herramienta real siempre NOT_CONFIGURED | Proveedor autorizado, ubicación y cuotas |
+| POI | Google Places opcional y demo; sin consulta comercial/GPS físico validado | Clave restringida, ubicación y cuotas en proyecto de prueba |
 | Estado de conducción | UNKNOWN; confirmar entorno de prueba no certifica PARKED | Fuente fiable antes de funciones avanzadas |
-| UI | Dashboard adaptable, sin editor de widgets; selección de voces puede ser larga | 800×480 y 360×640 revisados con scroll; falta tamaño de fuente máximo y hardware físico |
-| Distribución | APK Sprint 3 debug firmado localmente; sin release ni CI remoto de la rama | CI tras autorización de push; firma de producción fuera del repositorio |
+| UI | Editor de widgets disponible solo en laboratorio explícito y temporal; sin drag-and-drop, se usan botones | Hardware físico y escalas de fuente extremas pendientes; resoluciones reales ejecutadas en SPRINT6_REPORT.md |
+| Distribución | APK Sprint 6 debug firmado localmente; sin release ni CI remoto de la rama | CI tras autorización de push; firma de producción fuera del repositorio |
 | Dependencias | Versiones estables fijadas, avisos de actualización de lint; no auditoría CVE exhaustiva | Auditoría y renovación controlada de la matriz |
 | Python heredado | Servidor local sin auth; LLM opcional envía métricas y texto según README original | Mantener en localhost; puente Android futuro requiere nuevo diseño de consentimiento |
 
@@ -30,6 +31,23 @@ El Device Lab informa disponibilidad y resultados técnicos. Sus checks no certi
 
 El contrato de contexto vehicular no transmite datos al proveedor. Las pruebas IA opcionales pueden consumir cuota. La conectividad, modelo y tool calling de cada proveedor compatible deben probarse por separado. El simulador y el servidor HTTP local no garantizan compatibilidad de adaptadores ni APIs externas.\n
 
+## Sprint 6 — límites del editor y la evidencia
+
+El editor funciona solo con modo laboratorio y confirmación explícita temporal.
+No existe una señal certificada de aparcamiento: velocidad cero sigue UNKNOWN.
+El control de movimiento consume las lecturas originales; no garantiza detectar
+movimiento si no hay sensor/PID válido. La declaración del usuario no sustituye esa
+medición. No hay edición por voz/LLM ni drag-and-drop; los botones son la alternativa
+accesible elegida. No hay widgets remotos, incrustación de apps ni mapa integrado.
+La versión 0 migrable usa el mismo modelo de instancias; no se importa un formato
+arbitrario de terceros. La migración se guarda como v1 al próximo guardado explícito.
+Una escritura atómica ya finalizada no se revierte al salir a segundo plano.
+
+Las capturas/resoluciones y escalas ejecutadas se detallan en SPRINT6_REPORT.md.
+No hay validación física de pantallas, TalkBack, acústica, GPS, ELM327 ni reproductores
+comerciales. No se han medido FPS, recomposiciones, batería ni latencia del editor.
+La matriz física existente permanece PENDING donde ya lo estaba.
+
 ## Sprint 5 — límites adicionales y corrección de POI
 
-La línea anterior de POI («puerto/fake; siempre NOT_CONFIGURED») describe el estado antes de Sprint 5. Ahora hay proveedor Google Places SDK opcional y demo explícita. Este checkout no tiene clave, factura ni consulta comercial validada. Sin clave se mantiene `NOT_CONFIGURED` salvo demo. El centro manual no está disponible porque falta geocodificación autorizada y fiable. Nearby Search de ratings/reseñas puede ser facturable; cuota, condiciones EEE, atribuciones y políticas de privacidad requieren revisión de despliegue. Solo se ha probado la navegación simulada en emulador; Maps/Waze físicos y GPS siguen pendientes. No hay ETA ni ruta activa observada. La precisión depende del dispositivo y servicio de ubicación; se descartan fixes mayores de 30 s. El control «entorno detenido» es declaración del usuario, no detección verificada de movimiento.
+Sprint 5 sustituyó el puerto/fake de POI por Google Places SDK opcional y demo explícita. Este checkout no tiene clave, factura ni consulta comercial validada. Sin clave se mantiene `NOT_CONFIGURED` salvo demo. El centro manual no está disponible porque falta geocodificación autorizada y fiable. Nearby Search de ratings/reseñas puede ser facturable; cuota, condiciones EEE, atribuciones y políticas de privacidad requieren revisión de despliegue. Solo se ha probado la navegación simulada en emulador; Maps/Waze físicos y GPS siguen pendientes. No hay ETA ni ruta activa observada. La precisión depende del dispositivo y servicio de ubicación; se descartan fixes mayores de 30 s. El control «entorno detenido» es declaración del usuario, no detección verificada de movimiento.

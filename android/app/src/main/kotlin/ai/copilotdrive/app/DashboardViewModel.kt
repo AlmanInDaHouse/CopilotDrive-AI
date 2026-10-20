@@ -26,6 +26,8 @@ data class DashboardState(
     val selectedObdAddress: String? = null,
     val obdCapabilities: Set<String> = emptySet(),
     val obdError: String? = null,
+    val bluetoothStatus: String = "No comprobado",
+    val diagnosticSummary: List<DiagnosticCheck> = emptyList(),
     val media: MediaSnapshot = MediaSnapshot(),
     val artwork: Bitmap? = null,
     val voice: VoiceSessionState = VoiceSessionState(),
@@ -51,6 +53,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val mutable = MutableStateFlow(DashboardState())
     val state = mutable.asStateFlow()
     private val preferences = Preferences(app)
+    private val layoutRepository = DataStoreLayoutRepository(app)
+    val customization = DashboardCustomization(layoutRepository,
+        Clock { SystemClock.elapsedRealtime() }, viewModelScope)
     private val secrets = KeystoreSecretStore(app)
     private val clock = ai.copilotdrive.core.SystemClock
     private val bluetooth = AndroidBluetoothObd(app)
@@ -146,6 +151,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private var ticker: Job? = null
 
     init {
+        viewModelScope.launch { layoutRepository.state.collect(customization::load) }
+        viewModelScope.launch { diagnosticHistory.checks.collect { checks -> mutable.update { it.copy(diagnosticSummary = checks.takeLast(3)) } } }
+        // Observe existing readings for immediate movement signals; never start another OBD poller.
+        viewModelScope.launch { obd.readings.collect { reading -> customization.motion(layoutMotion(reading, clock.now())) } }
         viewModelScope.launch {
             preferences.state.catch { mutable.update { it.copy(preferencesLoaded = true, notice = "No se pudieron cargar las preferencias.") } }
                 .collect { prefs ->
@@ -164,6 +173,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { voice.state.collect { session -> mutable.update { it.copy(voice = session) }; refreshMedia() } }
         viewModelScope.launch { androidMedia.state.collect { refreshMedia() } }
         viewModelScope.launch { obd.state.collect { connection ->
+            if (connection != VehicleConnectionState.SIMULATED && connection != VehicleConnectionState.CONNECTED_REAL)
+                customization.confirmLaboratory(false)
             vehicle.invalidate()
             mutable.update { it.copy(vehicleConnection = connection, obdError = obd.error.value) }
             refreshCapabilities()
@@ -189,6 +200,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun foreground() {
+        customization.foreground()
         if (ticker?.isActive == true) return
         viewModelScope.launch {
             tts.initialize()
@@ -201,12 +213,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 androidMedia.refresh()
                 refreshMedia(); refreshCapabilities()
                 val snapshot = vehicle.snapshot()
+                customization.motion(layoutMotion(snapshot, clock.now()))
+                customization.tick()
                 mutable.update { it.copy(vehicle = snapshot, clock = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))) }
                 delay(1_000)
             }
         }
     }
-    fun background() { ticker?.cancel(); ticker = null; setPlacesStationary(false); cancel(); androidMedia.close(); if (obd.state.value != VehicleConnectionState.SIMULATED) obd.disconnect() }
+    fun background() { customization.background(); ticker?.cancel(); ticker = null; setPlacesStationary(false); cancel(); androidMedia.close(); if (obd.state.value != VehicleConnectionState.SIMULATED) obd.disconnect() }
+    fun saveLayout() { viewModelScope.launch { customization.save() } }
     fun refreshPairedBluetooth() {
         try {
             if (!bluetooth.present()) {
@@ -332,6 +347,14 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         val result = tools.execute(ToolRequest("navigation.open_selected_place", mapOf("provider" to provider)))
         mutable.update { it.copy(notice = result.message) }
     } }
+    fun openDashboardNavigation(provider: String) {
+        if (mutable.value.places.selection != null) { openSelectedPlace(provider); return }
+        val destination = mutable.value.destination ?: return
+        viewModelScope.launch {
+            val result = tools.execute(ToolRequest("navigation.open_destination", mapOf("destination" to destination, "provider" to provider)))
+            mutable.update { it.copy(notice = result.message) }
+        }
+    }
     fun clearPlaces() { places.clear(); mutable.update { it.copy(notice = "Resultados temporales borrados.") } }
     fun testProvider() { viewModelScope.launch {
         val started = SystemClock.elapsedRealtime()
@@ -395,7 +418,13 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             "vehicle.obd_connected" to "Adaptador OBD", "navigation.google_maps" to "Google Maps", "navigation.waze" to "Waze",
             "contacts.access" to "Contactos", "phone.dialer" to "Marcador", "places.provider_configured" to "Lugares cercanos",
         )
-        mutable.update { it.copy(capabilities = labels.map { (id, label) -> Capability(id, capabilities.get(id), label) }) }
+        val bluetoothStatus = try { when {
+            !bluetooth.present() -> "No disponible"
+            !bluetooth.permitted() -> "Permiso requerido"
+            !bluetooth.available() -> "Apagado o no disponible"
+            else -> "Radio disponible · no implica ELM conectado"
+        } } catch (_: SecurityException) { "Permiso requerido" }
+        mutable.update { it.copy(capabilities = labels.map { (id, label) -> Capability(id, capabilities.get(id), label) }, bluetoothStatus = bluetoothStatus) }
     }
     override fun onCleared() { background(); bluetooth.dispose(); assistant.clearAllConversations(); tts.close(); super.onCleared() }
 }

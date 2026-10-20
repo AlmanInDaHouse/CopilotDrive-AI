@@ -1,5 +1,42 @@
 # Resultados ejecutados — 2026-10-20
 
+## Sprint 6 — rama local `feat/sprint6-custom-dashboard`
+
+Base canónica `2099b9d` verificada por fetch; main sincronizado por fast-forward.
+Baseline aislado sobre esa base: Python **12/12**, core **17/17**, testing **56/56**,
+app **2/2**, lint y APK debug/test correctos. La redirección inicial de logs PowerShell
+abortó por un aviso SDK en stderr; el baseline completo se repitió sin esa redirección.
+
+Versión final funcional `b941c2a` (harness adicional `fc69927`): Python **12/12**, core **33/33**, testing **56/56**,
+app JVM **6/6**, instrumentadas API 35 **23/23**: **130/130**, sin omitidas.
+`:app:lintDebug`: **0 errores, 12 avisos**; `assembleDebug` y
+`assembleDebugAndroidTest`: **BUILD SUCCESSFUL**. `check_repository.py` y
+`git diff --check`: correctos. Sin nuevos permisos, dependencias, proveedores ni tools LLM.
+
+Editor: añadir, ocultar, mover, tamaño, preview, guardar, cancelar, presets,
+restauración, Activity recreate, revocación, background y no solape geométrico de
+los controles fijos; layout engine cubre
+tipos/tamaños/posiciones inválidos, corrupción, migración, solapes, duplicados,
+cancelación IO, simultaneidad, UNKNOWN, movimiento y TTL con reloj determinista.
+DataStore real conserva documento al reabrir archivo. Pruebas anteriores de voz,
+OBD fake, MediaSession, privacidad, Places demo, IA loopback y Keystore pasan.
+
+Smoke final: instalación adb y MainActivity, flujo editor repetido para capturas,
+ocho configuraciones reales del display emulado (800×480, 1024×600, 1280×720,
+1920×1080, 360×640, 1280×800 a 160 dpi; 800×480 fontScale 1.5; 1280×720 a 240 dpi),
+controles fijos dentro de bounds y layout conservado tras force-stop/reinicio.
+Consulta local de combustible con Wi-Fi/datos desactivados: **1/1**, 42 % simulado.
+Sin FATAL EXCEPTION en el buffer de crashes del smoke. Se restauraron resolución,
+densidad, fontScale y red. Son pruebas de emulador, no de hardware.
+
+APK final: `artifacts/CopilotDrive-AI-sprint6-debug.apk`, **19.825.143 bytes**,
+SHA-256 `1FD9B5C3682896BA9100F70C9AAC0853063DA5BC6F8DC2CED117EECD66707F91`.
+`apksigner verify --verbose --print-certs`: firma debug v2 válida, un firmante.
+Evidencias locales ignoradas: `artifacts/sprint6/` (capturas, XML, JSON, firma,
+smoke offline y crash log). Detalles, presets, tamaños dp vs píxeles y límites en
+`SPRINT6_REPORT.md`. Sin mediciones de FPS/consumo/latencia del editor; sin nueva
+validación física de voz, ELM327, GPS, Maps/Waze, Places o pantallas.
+
 ## Sprint 4 — rama local `feat/sprint4-hardware-validation`
 
 Tras el commit funcional `8b7522d`, se ejecutaron en Windows/JDK 17/SDK 35: Python unittest **12/12**; JVM core **16/16**, testing **44/44**, Android unit **2/2**; Android instrumentado en emulador API 35 **14/14**. Total: **88/88**. El último comando Gradle conjunto (`:core:test :testing:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest :app:connectedDebugAndroidTest`) terminó `BUILD SUCCESSFUL`. Android lint: **0 errores, 10 avisos**; `check_repository.py` y `git diff --check` aprobaron.

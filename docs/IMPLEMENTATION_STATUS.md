@@ -56,7 +56,7 @@ El modo de demostración sigue disponible y explícitamente etiquetado.
 ## Parcial o pendiente
 - Validación de un proveedor comercial/servidor real y telemetría consentida: pendientes. El APK Sprint 2 sí solicita INTERNET para la IA opcional.
 - En la rama Sprint 3 se implementan RFCOMM Bluetooth Classic, consultas de capacidades y reconexión limitada. Falta validación física con adaptador y coche.
-- POI real y ubicación, wake word, editor de widgets, Spotify SDK específico: pendientes.
+- Validación física POI/ubicación, wake word y Spotify SDK específico: pendientes.
 - No hay puente Android-Python activado; contrato v1 está preparado y probado con fixtures.
 - Cualificación en pantallas físicas, ruido, voz acústica, latencia y consumo: pendientes.
 - Firma de producción, releases y distribución pública: no realizados. PR #1, #2 y #3 fusionadas; rama Sprint 3 local.
@@ -73,3 +73,14 @@ de un adaptador con validación del servicio de un tercero. KNOWN_LIMITATIONS.md
 **AUTOMATED_TESTED:** 102/102; detalle en `TEST_RESULTS.md`. **EMULATOR_TESTED:** flujo fake y apertura simulada 15/15, más consulta local offline 1/1. **PHYSICALLY_VERIFIED:** ninguno. **PENDING:** búsqueda Google Places con clave/facturación reales, GPS físico, Apps Maps/Waze instaladas, voz acústica y ELM327. La matriz `PHYSICAL_VALIDATION_MATRIX.md` permanece independiente.
 
 **SPRINT 5 VALIDACIÓN FINAL:** 12 Python, 75 JVM y 15 instrumentadas en emulador API 35; 102/102. Lint 0 errores. APK debug v2 verificado; SHA-256 y smoke offline en `TEST_RESULTS.md`. `PHYSICALLY_VERIFIED` permanece ninguno para Places/GPS/Maps/Waze, voz y OBD.
+
+## Sprint 6 — dashboard personalizable
+
+Implementados ocho tipos de widget, registro cerrado, motor puro con validación y
+packing determinista, cuatro presets, editor separado con botones accesibles y preview,
+guardar/cancelar/restaurar y DataStore versionado con recuperación/migración. El editor
+requiere laboratorio confirmado temporal; movimiento/background/revocación descartan.
+Voz/PTT, respuesta completa, ajustes y origen vehicular permanecen en barra fija.
+Sin nuevos permisos, proveedores, tools LLM ni conexiones por widget. Fuentes originales
+de MediaSession/OBD/Places/voz; no ETA ni cartografía inventadas. Referencia Sprint 5
+conservada en LegacyDashboardScreen. Evidencia final y límites en SPRINT6_REPORT.md.

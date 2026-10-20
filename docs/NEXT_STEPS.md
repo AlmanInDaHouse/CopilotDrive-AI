@@ -1,5 +1,21 @@
 # Próximo sprint recomendado — interoperabilidad física
 
+## Después de Sprint 6
+
+El dashboard modular y el editor de laboratorio están implementados; véase
+`SPRINT6_REPORT.md` y `DASHBOARD_CUSTOMIZATION.md`. Sprint 7 recomendado: validar
+pantallas Android físicas con densidades/fuentes/barras concretas, accesibilidad con
+TalkBack y los flujos de guardar/cancelar/rotar/segundo plano. Completar la matriz
+física existente para OBD, voz acústica, GPS, reproductores y Maps/Waze instalados.
+Medir recomposiciones/consumo con herramientas fiables antes de fijar objetivos de FPS.
+No abrir edición en conducción ni añadir tools de layout al LLM. Mantener UNKNOWN
+como desconocido y la confirmación de laboratorio como declaración temporal.
+
+La rama `feat/sprint6-custom-dashboard` permanece local. Para PR: revisar commits y
+evidencia, autorizar push, ejecutar `git push -u origin feat/sprint6-custom-dashboard`,
+crear PR hacia main con el resumen de SPRINT6_REPORT y esperar Android/Python CI.
+Push, merge y release requieren autorización; no se han realizado en Sprint 6.
+
 Sprint 4 implementa la infraestructura de diagnóstico. `SPRINT4_REPORT.md` contiene resultados ejecutados; `PHYSICAL_VALIDATION_MATRIX.md` conserva cada integración física sin probar como `PENDING`.
 
 1. Ejecutar `DEVICE_LAB_PROCEDURE.md` en teléfonos Android concretos con voz local es-ES. Anotar motor, voz, permisos, STT, silencio, cancelación, audio focus, callback TTS y confirmación audible. Repetir en al menos dos fabricantes o versiones de Android cuando haya equipos.

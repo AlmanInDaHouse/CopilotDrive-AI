@@ -15,7 +15,8 @@ JSON schema version 1 uses epoch milliseconds, nullable metrics, explicit source
 ## Safety and privacy
 Never add vehicle writes, arbitrary ELM commands, actuator tools or privileged permissions.
 Only allowlisted read PIDs; simulation must be labeled in UI AND spoken output.
-Unknown motion is not parked. No advanced layout editor in this increment.
+Unknown motion is not parked. Sprint 6 layout editing requires explicit session-only
+laboratory mode and confirmation of a stationary test environment (never proof of PARKED).
 All external actions pass deterministic tool policy; provider text never grants permission.
 No background microphone loop. Stop recognition/TTS on backgrounding. No audio/history logging.
 Contacts stay local. ACTION_DIAL only, with fresh confirmation. No implicit network consent.
@@ -49,3 +50,12 @@ requests coarse location only when a search starts; the Google Places SDK is opt
 separate session consent. Keep provider text out of AI prompts and diagnostics. Demo results and
 navigation must stay visibly simulated. Never infer ETA from straight-line distance. Keep the
 physical OBD, voice, GPS and Maps/Waze validation matrix pending until observed on devices.
+
+Sprint 6: closed native WidgetRegistry; pure Kotlin layout contracts, codec/migration,
+first-fit projection and edit sessions in core. DataStore stores only non-sensitive v1
+layout; no drafts or safety confirmations. One layout coordinator, no provider/ViewModel
+per widget. Layout editor abandons on movement, lab revocation, TTL expiry or background;
+in-flight writes are cancelled when safety is revoked. No layout tool exposed to AI.
+Always retain fixed voice status/PTT, settings and telemetry-source indicator. Preserve
+LegacyDashboardScreen as the Sprint 5 reference. Execute DashboardLayoutTest before
+editor changes; record actual dp/resolution/fontScale evidence separately from hardware.

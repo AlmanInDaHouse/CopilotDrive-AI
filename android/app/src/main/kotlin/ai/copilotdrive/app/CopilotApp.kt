@@ -22,10 +22,14 @@ import ai.copilotdrive.core.PlaceCategory
 fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: () -> Unit, onMediaPermission: () -> Unit,
     onBluetoothPermission: () -> Unit = {}, onPlaceSearch: (PlaceCategory) -> Unit = {}) {
     val state by model.state.collectAsStateWithLifecycle()
+    val customization by model.customization.state.collectAsStateWithLifecycle()
     var settings by rememberSaveable { mutableStateOf(false) }
     var deviceLab by rememberSaveable { mutableStateOf(false) }
     var places by rememberSaveable { mutableStateOf(false) }
     var confirmSettings by remember { mutableStateOf(false) }
+    var confirmEditor by remember { mutableStateOf(false) }
+    var laboratoryMode by remember { mutableStateOf(false) }
+    LaunchedEffect(customization.laboratory) { if (!customization.laboratory) laboratoryMode = false }
     CopilotTheme {
         Surface(Modifier.fillMaxSize().safeDrawingPadding(), color = MaterialTheme.colorScheme.background) {
             when {
@@ -34,8 +38,14 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
                 deviceLab -> DeviceLabScreen(model, { deviceLab = false }, { deviceLab = false; places = true })
                 places -> PlacesScreen(state, model, { places = false }, onPlaceSearch)
                 settings -> SettingsScreen(state, { settings = false }, model::savePreferences, { settings = false; onMicrophone() }, onContacts, onMediaPermission, onBluetoothPermission, model::setDemoMedia, model.androidMedia::select, model, { deviceLab = true })
+                customization.edit != null -> DashboardEditor(state, customization, model.customization::change, model::saveLayout,
+                    model.customization::cancel, { model.customization.confirmLaboratory(false) },
+                    { model.customization.cancel(); confirmSettings = true }, onMicrophone, model::cancel, model::demo)
                 else -> DashboardScreen(state, { confirmSettings = true }, onMicrophone, model::cancel, model::demo, model::mediaControl,
-                    onPlaces = { places = true; model.cancel() })
+                    onPlaces = { places = true; model.cancel() }, layout = customization.layout,
+                    onEdit = { laboratoryMode = false; confirmEditor = true; model.cancel() },
+                    onDeviceLab = { deviceLab = true; model.cancel() }, onNavigate = model::openDashboardNavigation,
+                    layoutNotice = customization.error)
             }
             if (confirmSettings) {
                 AlertDialog(onDismissRequest = { confirmSettings = false }, title = { Text("Configuración de laboratorio") },
@@ -43,9 +53,28 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
                     confirmButton = { TextButton(onClick = { confirmSettings = false; settings = true; model.cancel() }) { Text("Estoy en un entorno detenido") } },
                     dismissButton = { TextButton(onClick = { confirmSettings = false }) { Text("Cancelar") } })
             }
+            if (confirmEditor) {
+                AlertDialog(onDismissRequest = { confirmEditor = false }, title = { Text("Edición solo en laboratorio") },
+                    text = { Column {
+                        Text("Movimiento: ${customization.motion.name}. Desconocido no significa detenido. Confirma solo en un entorno de prueba detenido; no verifica aparcamiento.")
+                        Row {
+                            Checkbox(checked = laboratoryMode, onCheckedChange = { laboratoryMode = it }, modifier = Modifier.testTag("layout-laboratory"))
+                            Text("Activar modo laboratorio", modifier = Modifier.padding(top = 12.dp))
+                        }
+                    } },
+                    confirmButton = { TextButton(onClick = {
+                        model.customization.confirmLaboratory(laboratoryMode)
+                        if (model.customization.begin()) confirmEditor = false
+                    }, enabled = laboratoryMode && customization.motion != ai.copilotdrive.core.MotionState.MOVING && customization.loaded,
+                        modifier = Modifier.testTag("confirm-layout-laboratory")) { Text("Confirmo entorno de prueba detenido") } },
+                    dismissButton = { TextButton(onClick = { confirmEditor = false; laboratoryMode = false }) { Text("Cancelar") } })
+            }
         }
     }
-    BackHandler(settings || deviceLab || places) { if (places) places = false else if (deviceLab) deviceLab = false else settings = false }
+    BackHandler(settings || deviceLab || places || customization.edit != null) {
+        if (customization.edit != null) model.customization.cancel()
+        else if (places) places = false else if (deviceLab) deviceLab = false else settings = false
+    }
 }
 
 @Composable
