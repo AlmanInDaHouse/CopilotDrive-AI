@@ -16,6 +16,10 @@ def main():
     assert manifest.find('application').attrib[ANDROID + 'allowBackup'] == 'false'
     for source in (ROOT / 'android/core/src/main').rglob('*.kt'):
         assert 'import android.' not in source.read_text(encoding='utf-8'), source
+    app_dependencies = (ROOT / 'android/app/build.gradle.kts').read_text(encoding='utf-8')
+    assert 'implementation(project(":testing"))' not in app_dependencies
+    for source in (ROOT / 'android/app/src/main').rglob('*.kt'):
+        assert 'ai.copilotdrive.testing' not in source.read_text(encoding='utf-8'), source
     for folder in (ROOT / 'specs').iterdir():
         if folder.is_dir():
             for filename in ('spec.md', 'contracts.md', 'acceptance.md', 'test-plan.md'):
@@ -27,7 +31,7 @@ def main():
     files = subprocess.check_output(['git', 'ls-files'], cwd=ROOT, text=True).splitlines()
     forbidden = [p for p in files if p.endswith(('.jks', '.keystore', 'local.properties', '.apk')) or p.startswith('.tools/') or p == '.env']
     assert not forbidden, forbidden
-    print('Repository checks passed: permissions, network policy, module boundary, specifications, fixture fields, generated/secret file exclusions.')
+    print('Repository checks passed: permissions, network policy, module boundaries, specifications, fixture fields, generated/secret file exclusions.')
 
 
 if __name__ == '__main__':

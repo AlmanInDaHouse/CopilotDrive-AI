@@ -10,8 +10,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import ai.copilotdrive.app.ui.CopilotTheme
 import ai.copilotdrive.app.ui.DashboardScreen
 import ai.copilotdrive.core.*
-import ai.copilotdrive.testing.DeterministicClock
-import ai.copilotdrive.testing.FakeMediaAdapter
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -42,7 +40,7 @@ class DashboardUiTest {
     }
 
     @Test fun unsupportedNextIsDisabled() {
-        val media = FakeMediaAdapter(DeterministicClock()).state.value.copy(supportedControls = setOf(MediaControl.PLAY))
+        val media = DemoMediaAdapter(Clock { 0 }).state.value.copy(supportedControls = setOf(MediaControl.PLAY))
         compose.setContent {
             CopilotTheme { Surface { DashboardScreen(DashboardState(vehicle = simulatedVehicle(0), media = media), {}, {}, {}, {}, {}) } }
         }
