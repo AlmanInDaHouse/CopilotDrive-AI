@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ai.copilotdrive.app.platform.VoicePreferences
 import ai.copilotdrive.app.ui.*
@@ -26,7 +27,7 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
             when {
                 !state.preferencesLoaded -> Box(Modifier.padding(32.dp)) { Text("Preparando CopilotDrive…") }
                 !state.preferences.onboarded -> Onboarding { model.savePreferences(state.preferences.copy(onboarded = true)) }
-                settings -> SettingsScreen(state, { settings = false }, model::savePreferences, { settings = false; onMicrophone() }, onContacts, onMediaPermission, model::setDemoMedia, model.androidMedia::select)
+                settings -> SettingsScreen(state, { settings = false }, model::savePreferences, { settings = false; onMicrophone() }, onContacts, onMediaPermission, model::setDemoMedia, model.androidMedia::select, model)
                 else -> DashboardScreen(state, { confirmSettings = true }, onMicrophone, model::cancel, model::demo, model::mediaControl)
             }
             if (confirmSettings) {
@@ -61,11 +62,17 @@ fun Onboarding(onAccept: () -> Unit) {
 private fun SettingsScreen(
     state: DashboardState, onBack: () -> Unit, onSave: (VoicePreferences) -> Unit,
     onMicrophone: () -> Unit, onContacts: () -> Unit, onMediaPermission: () -> Unit,
-    onDemoMedia: (Boolean) -> Unit, onSelectSession: (String) -> Unit,
+    onDemoMedia: (Boolean) -> Unit, onSelectSession: (String) -> Unit, model: DashboardViewModel,
 ) {
     var voiceMenu by remember { mutableStateOf(false) }
     var rate by remember(state.preferences.rate) { mutableFloatStateOf(state.preferences.rate) }
     var pitch by remember(state.preferences.pitch) { mutableFloatStateOf(state.preferences.pitch) }
+    var endpoint by remember(state.preferences.ai.endpoint) { mutableStateOf(state.preferences.ai.endpoint) }
+    var providerModel by remember(state.preferences.ai.model) { mutableStateOf(state.preferences.ai.model) }
+    var providerName by remember(state.preferences.ai.providerName) { mutableStateOf(state.preferences.ai.providerName) }
+    var timeout by remember(state.preferences.ai.timeoutMs) { mutableFloatStateOf(state.preferences.ai.timeoutMs.toFloat()) }
+    var token by remember { mutableStateOf("") }
+    var consentDialog by remember { mutableStateOf(false) }
     LazyColumn(contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.testTag("settings")) {
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -90,12 +97,14 @@ private fun SettingsScreen(
                         state.voices.forEach { voice -> DropdownMenuItem(text = { Text(voice.label) }, onClick = { onSave(state.preferences.copy(voice = voice.name)); voiceMenu = false }) }
                     }
                 }
-                if (state.voices.isEmpty()) Text("No se detectan voces locales. Instala una voz TTS en los ajustes de Android.", color = Amber)
+                Text(state.ttsStatus, color = if (state.voices.isEmpty()) Amber else Mint)
+                if (state.voices.isEmpty()) OutlinedButton(onClick = model::installVoiceData) { Text("Instalar datos de voz desde Android") }
                 Text("Velocidad de voz: ${"%.1f".format(rate)}")
                 Slider(value = rate, onValueChange = { rate = it }, onValueChangeFinished = { onSave(state.preferences.copy(rate = rate)) }, valueRange = 0.7f..1.3f)
                 Text("Tono: ${"%.1f".format(pitch)}")
                 Slider(value = pitch, onValueChange = { pitch = it }, onValueChangeFinished = { onSave(state.preferences.copy(pitch = pitch)) }, valueRange = 0.7f..1.3f)
                 OutlinedButton(onClick = onMicrophone, modifier = Modifier.heightIn(min = 56.dp)) { Text("Permitir micrófono y probar") }
+                OutlinedButton(onClick = model::testVoice, enabled = state.voices.isNotEmpty()) { Text("Probar voz seleccionada") }
             }
         }
         item {
@@ -116,9 +125,50 @@ private fun SettingsScreen(
         }
         item {
             DashboardCard(Modifier.fillMaxWidth()) {
-                Eyebrow("PROVEEDORES")
-                Text("Asistente local · activo", modifier = Modifier.padding(top = 12.dp))
-                Text("IA remota, Bluetooth OBD, wake word y lugares cercanos: no configurados en esta versión. El APK no solicita acceso a Internet.", color = Muted)
+                Eyebrow("INTELIGENCIA ARTIFICIAL")
+                Text("Comandos locales · siempre activos", modifier = Modifier.padding(top = 12.dp))
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Activar IA externa", modifier = Modifier.weight(1f).padding(vertical = 16.dp))
+                    Switch(checked = state.preferences.ai.enabled, onCheckedChange = { enabled ->
+                        if (enabled && !state.preferences.ai.consented) consentDialog = true
+                        else onSave(state.preferences.copy(ai = state.preferences.ai.copy(enabled = enabled)))
+                    })
+                }
+                OutlinedTextField(value = endpoint, onValueChange = { endpoint = it.take(300) }, label = { Text("URL base del proveedor") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = providerName, onValueChange = { providerName = it.take(80) }, label = { Text("Nombre del proveedor") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                OutlinedTextField(value = providerModel, onValueChange = { providerModel = it.take(100) }, label = { Text("Modelo") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                Text("Tiempo de espera: ${timeout.toInt() / 1000} s")
+                Slider(value = timeout, onValueChange = { timeout = it }, valueRange = 3_000f..30_000f, steps = 8)
+                Text("HTTPS obligatorio. HTTP local solo en APK debug para localhost o 10.0.2.2.", color = Muted, fontSize = 13.sp)
+                OutlinedButton(onClick = {
+                    val changed = endpoint != state.preferences.ai.endpoint || providerModel != state.preferences.ai.model || providerName != state.preferences.ai.providerName
+                    onSave(state.preferences.copy(ai = state.preferences.ai.copy(endpoint = endpoint.trim(), model = providerModel.trim(),
+                        providerName = providerName.trim(), timeoutMs = timeout.toInt(),
+                        enabled = if (changed) false else state.preferences.ai.enabled,
+                        consented = if (changed) false else state.preferences.ai.consented)))
+                }) { Text("Guardar proveedor y modelo") }
+                OutlinedTextField(value = token, onValueChange = { token = it.take(4_096) }, label = { Text("Credencial") },
+                    visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth())
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { model.saveCredential(token); token = "" }, enabled = token.isNotBlank()) { Text("Guardar clave") }
+                    OutlinedButton(onClick = model::clearCredential, enabled = state.credentialSaved) { Text("Eliminar clave") }
+                }
+                Text(if (state.credentialSaved) "Credencial guardada y oculta" else "No hay credencial", color = Muted)
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Herramientas estructuradas", modifier = Modifier.weight(1f))
+                    Switch(checked = state.preferences.ai.toolCalling, onCheckedChange = { onSave(state.preferences.copy(ai = state.preferences.ai.copy(toolCalling = it))) })
+                }
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Compartir contexto del vehículo", modifier = Modifier.weight(1f))
+                    Switch(checked = false, onCheckedChange = {}, enabled = false)
+                }
+                Text("En este sprint solo se envía el texto y el historial efímero. No se envían contactos, ubicación ni telemetría.", color = Muted, fontSize = 13.sp)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = model::testProvider, enabled = state.preferences.ai.enabled && state.preferences.ai.consented) { Text("Probar conexión") }
+                    OutlinedButton(onClick = { onSave(state.preferences.copy(ai = state.preferences.ai.copy(enabled = false, consented = false))) }) { Text("Revocar permiso") }
+                }
+                OutlinedButton(onClick = model::clearConversation) { Text("Borrar conversación") }
+                Text(state.notice, color = Muted)
             }
         }
         item { Eyebrow("DIAGNÓSTICO DEL DISPOSITIVO") }
@@ -129,6 +179,14 @@ private fun SettingsScreen(
             }
         }
     }
+    if (consentDialog) AlertDialog(onDismissRequest = { consentDialog = false },
+        title = { Text("Autorizar consulta externa") },
+        text = { Text("Proveedor: ${state.preferences.ai.providerName.ifBlank { state.preferences.ai.endpoint.ifBlank { "sin configurar" } }}. Se enviará el texto de la consulta y hasta ocho mensajes recientes. No se enviarán contactos, ubicación ni telemetría. Puedes desactivar y borrar la clave en cualquier momento.") },
+        confirmButton = { TextButton(onClick = {
+            consentDialog = false
+            onSave(state.preferences.copy(ai = state.preferences.ai.copy(enabled = true, consented = true)))
+        }) { Text("Autorizar") } },
+        dismissButton = { TextButton(onClick = { consentDialog = false }) { Text("Cancelar") } })
 }
 
 fun capabilityLabel(status: CapabilityStatus): String = when (status) {

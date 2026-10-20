@@ -26,6 +26,8 @@ data class DashboardState(
     val preferences: VoicePreferences = VoicePreferences(),
     val preferencesLoaded: Boolean = false,
     val voices: List<InstalledVoice> = emptyList(),
+    val credentialSaved: Boolean = false,
+    val ttsStatus: String = "Inicializando voz…",
     val capabilities: List<Capability> = emptyList(),
     val sessions: List<MediaSessionChoice> = emptyList(),
     val demoMedia: Boolean = true,
@@ -39,6 +41,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val mutable = MutableStateFlow(DashboardState())
     val state = mutable.asStateFlow()
     private val preferences = Preferences(app)
+    private val secrets = KeystoreSecretStore(app)
     private val clock = ai.copilotdrive.core.SystemClock
     private val vehicle = VehicleContextEngine(SimulatorVehicleProvider(clock), clock)
     val androidMedia = AndroidMediaAdapter(app)
@@ -80,7 +83,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
     private val capabilities = CapabilityRegistry(permissionProvider)
     private val tools = ToolRegistry(PolicyEngine(capabilities), vehicle, media, navigation, contacts)
-    private val assistant = AssistantOrchestrator(tools, clock)
+    private val aiProvider = OpenAICompatibleProvider(
+        { mutable.value.preferences.ai }, { secrets.get() }, AndroidHTTPTransport(),
+        allowLocalHttp = (app.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0,
+    )
+    private val assistant = AssistantOrchestrator(tools, clock, aiProvider)
     private val focus: AndroidAudioFocus = AndroidAudioFocus(app) { cancel() }
     private val voice: VoiceSessionCoordinator = VoiceSessionCoordinator(viewModelScope, stt, tts, assistant, focus, clock) { capabilities.available("microphone.available") }
     private var ticker: Job? = null
@@ -94,7 +101,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     refreshCapabilities()
                 }
         }
-        viewModelScope.launch { tts.initialize(); mutable.update { it.copy(voices = tts.voices.value) }; refreshCapabilities() }
+        viewModelScope.launch {
+            tts.initialize()
+            mutable.update { it.copy(voices = tts.voices.value, ttsStatus = tts.status.value, credentialSaved = secrets.get() != null) }
+            refreshCapabilities()
+        }
         viewModelScope.launch { voice.state.collect { session -> mutable.update { it.copy(voice = session) }; refreshMedia() } }
         viewModelScope.launch { androidMedia.state.collect { refreshMedia() } }
     }
@@ -121,6 +132,37 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             try { preferences.save(value) } catch (_: java.io.IOException) { mutable.update { it.copy(notice = "No se pudieron guardar las preferencias.") } }
         }
     }
+    fun saveCredential(value: String) {
+        try {
+            secrets.put(value)
+            mutable.update { it.copy(credentialSaved = true, notice = "Credencial guardada en este dispositivo.") }
+        } catch (_: Exception) { mutable.update { it.copy(notice = "No se pudo guardar la credencial.") } }
+    }
+    fun clearCredential() {
+        cancel(); secrets.clear()
+        mutable.update { it.copy(credentialSaved = false, notice = "Credencial eliminada.") }
+    }
+    fun clearConversation() { assistant.clearAllConversations(); mutable.update { it.copy(notice = "Conversación borrada.") } }
+    fun testProvider() { viewModelScope.launch {
+        val result = aiProvider.generate(AIRequest("Responde solo: conexión disponible."))
+        mutable.update { it.copy(notice = when (result) {
+            is AIResponse.Text, is AIResponse.ProposedTool -> "Proveedor respondió."
+            is AIResponse.Unavailable -> result.error.message
+            is AIResponse.Invalid -> result.error.message
+        }) }
+    } }
+    fun testVoice() { viewModelScope.launch {
+        try { tts.speak("Prueba de voz en español."); mutable.update { it.copy(notice = "Prueba de voz completada.") } }
+        catch (_: Exception) { mutable.update { it.copy(notice = "No se pudo reproducir la voz; la respuesta escrita sigue disponible.") } }
+    } }
+    fun installVoiceData() {
+        try {
+            app.startActivity(android.content.Intent(android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)
+                .addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (_: android.content.ActivityNotFoundException) {
+            mutable.update { it.copy(notice = "No hay instalador de voces en este dispositivo.") }
+        }
+    }
     fun setDemoMedia(enabled: Boolean) { demoMedia = enabled; androidMedia.refresh(); refreshMedia(); refreshCapabilities() }
     fun mediaControl(control: MediaControl) {
         viewModelScope.launch {
@@ -142,5 +184,5 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         )
         mutable.update { it.copy(capabilities = labels.map { (id, label) -> Capability(id, capabilities.get(id), label) }) }
     }
-    override fun onCleared() { background(); tts.close(); super.onCleared() }
+    override fun onCleared() { background(); assistant.clearAllConversations(); tts.close(); super.onCleared() }
 }

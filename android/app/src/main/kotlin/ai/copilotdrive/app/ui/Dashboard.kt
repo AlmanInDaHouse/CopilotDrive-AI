@@ -107,7 +107,7 @@ fun DashboardScreen(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(20.dp)) {
                     AssistantOrb(state.voice.state)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                        Eyebrow("JARVIS / ${voiceLabel(state.voice.state)}")
+                        Eyebrow("JARVIS / ${voiceLabel(state.voice.state)}${state.voice.errorSource?.let { " / $it" } ?: ""}")
                         Text(state.voice.message, fontSize = 20.sp, lineHeight = 28.sp, modifier = Modifier.testTag("assistant-message"))
                         Text(if (microphoneActive) "MICRÓFONO ACTIVO" else "Micrófono apagado · Solo escucha al pulsar", color = if (microphoneActive) Amber else Muted, fontSize = 13.sp)
                     }
