@@ -37,3 +37,9 @@ Use coroutines/StateFlow and cancellation; never swallow CancellationException.
 No secrets, build artifacts, SDKs or release signing keys in commits. No push without authorization.
 Changes require relevant tests, build/lint where available, and updated status/limitations.
 Continue from `docs/NEXT_STEPS.md`; distinguish implemented, tested, simulated and pending.
+
+Sprint 4: `DiagnosticCheck` in pure core separates check status from evidence level. Never promote
+fake/emulator checks to physical verification. Device Lab passive checks may run without hardware;
+network, acoustic and OBD actions require explicit user initiation. Diagnostic history is bounded,
+session-only and redacted; no automatic export. Use monotonic time for durations and wall time for
+timestamps. See `docs/PHYSICAL_VALIDATION_MATRIX.md` before claiming compatibility.

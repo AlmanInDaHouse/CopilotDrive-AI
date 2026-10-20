@@ -11,6 +11,19 @@ import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BluetoothObdTest {
+    @Test fun `diagnostic stages never promote fake to physical evidence`() = runTest {
+        val observations = mutableListOf<DiagnosticCheck>()
+        val provider = BluetoothObdProvider(FakeBluetoothTransport(), DeterministicClock(), backgroundScope, observations::add)
+        provider.connect("device")
+        runCurrent()
+        assertTrue(observations.any { it.id == "obd.rfcomm" })
+        assertTrue(observations.any { it.id == "obd.elm_init" })
+        assertTrue(observations.any { it.id == "obd.pid_discovery" })
+        assertTrue(observations.any { it.id == "obd.reading_success" })
+        assertTrue(observations.all { it.evidence == EvidenceLevel.PENDING && (it.durationMs ?: -1) >= 0 })
+        provider.disconnect(true)
+        assertTrue(observations.any { it.id == "obd.simulator_return" })
+    }
     @Test fun `simulator remains fresh after a long onboarding delay`() = runTest {
         val clock = DeterministicClock()
         val provider = BluetoothObdProvider(FakeBluetoothTransport(), clock, backgroundScope)

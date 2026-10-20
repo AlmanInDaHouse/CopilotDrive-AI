@@ -1,11 +1,11 @@
-# Próximo sprint recomendado — validación física
+# Próximo sprint recomendado — interoperabilidad física
 
-Sprint 2 está fusionado en `origin/main` `74507bb`. Sprint 3 está rebasado y validado localmente con APK debug, 81 pruebas automatizadas y lint sin errores. La rama `feat/sprint3-bluetooth-obd` no se ha publicado. El riesgo principal es la interoperabilidad física del adaptador y la voz; el emulador no demuestra ese funcionamiento. Borrador de alcance: `specs/013-hardware-validation/`.
+Sprint 4 implementa la infraestructura de diagnóstico. `SPRINT4_REPORT.md` contiene resultados ejecutados; `PHYSICAL_VALIDATION_MATRIX.md` conserva cada integración física sin probar como `PENDING`.
 
-1. Probar un ELM327 Bluetooth Classic compatible en banco con teléfono y vehículo detenidos. Registrar emparejamiento, PIDs, latencia, `NO DATA`, desconexión, revocación de permiso y retorno al simulador. No ejecutar consultas fuera de la lista blanca.
-2. Completar la matriz física de STT/TTS (Android 8/12/15, es-ES instalado y ausente, audio focus, llamada entrante, permiso revocado, cerrar/reabrir) y medir latencia y consumo. El emulador y los fakes no acreditan calidad acústica.
-3. Ejecutar pruebas de interoperabilidad con un servidor Chat Completions real, primero local y después remoto con token de prueba y cuota. Verificar respuesta de texto, tool calling, 401/429, TLS, timeout y revocación. No registrar prompts ni credenciales.
-4. Diseñar un contexto por dato para IA con TTL, procedencia, consentimiento separado y límite de tamaño antes de habilitar el interruptor de telemetría. Mantener contactos y ubicación fuera del prompt.
-5. Validar UX, MediaSession, Maps/Waze y contactos en dispositivos físicos. No convertir un intent solicitado en ruta, llamada o reproducción confirmada.
+1. Ejecutar `DEVICE_LAB_PROCEDURE.md` en teléfonos Android concretos con voz local es-ES. Anotar motor, voz, permisos, STT, silencio, cancelación, audio focus, callback TTS y confirmación audible. Repetir en al menos dos fabricantes o versiones de Android cuando haya equipos.
+2. Probar un ELM327 Bluetooth Classic compatible con vehículo detenido en banco controlado. Registrar RFCOMM, inicialización, PIDs, lecturas y `NO DATA`, timeout, revocación, desconexión, reconexión y retorno al simulador. Mantener exclusivamente el conjunto de solicitudes de solo lectura.
+3. Ensayar un endpoint Chat Completions real de forma opcional con clave de prueba y cuota. Documentar 200, 401, 429, 5xx, timeout, cancelación, JSON, texto y tool calling cuando el proveedor lo admita. No guardar credenciales ni prompts sensibles.
+4. Validar MediaSession con reproductores instalados, intents Maps/Waze y contactos ficticios en un dispositivo físico. Registrar callbacks observados sin afirmar que una acción externa haya concluido por abrir un intent.
+5. Reparar las incompatibilidades reproducidas y repetir la matriz ligada al SHA-256 del APK. Considerar el envío de contexto vehicular solo en una revisión posterior, con consentimiento específico, minimización, TTL y revocación implementados.
 
-Antes de continuar: leer `AGENTS.md` y `docs/TEST_RESULTS.md`, revisar `git status`, ejecutar `python scripts/check_repository.py`, Python unittest y los targets Gradle. Mantener specs, estado y limitaciones sincronizados.
+Antes de publicar una PR, repetir Python, JVM, Android unit/instrumentación, lint, `check_repository.py`, `git diff --check`, firma y SHA-256. El push, merge y release requieren autorización separada.

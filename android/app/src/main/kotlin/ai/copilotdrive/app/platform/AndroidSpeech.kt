@@ -26,23 +26,27 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 
-class AndroidSpeechRecognizer(private val context: Context, private val allowSystem: () -> Boolean) : SpeechToTextProvider {
+class AndroidSpeechRecognizer(private val context: Context, private val allowSystem: () -> Boolean,
+    private val onReady: (Long) -> Unit = {}) : SpeechToTextProvider {
     private var recognizer: SpeechRecognizer? = null
     fun localAvailable() = Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
     fun available() = localAvailable() || SpeechRecognizer.isRecognitionAvailable(context)
 
     override suspend fun recognize(onTranscribing: () -> Unit): String = withContext(Dispatchers.Main.immediate) {
+        val startedNs = System.nanoTime()
         val local = localAvailable()
         if (!local && !allowSystem()) throw SecurityException("System recognition requires consent")
         check(available())
         cancel()
-        suspendCancellableCoroutine { continuation ->
+        try { suspendCancellableCoroutine { continuation ->
             val active = if (local) SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
                 else SpeechRecognizer.createSpeechRecognizer(context)
             recognizer = active
             continuation.invokeOnCancellation { active.cancel(); active.destroy(); if (recognizer === active) recognizer = null }
             active.setRecognitionListener(object : RecognitionListener {
-                override fun onReadyForSpeech(params: Bundle?) = Unit
+                override fun onReadyForSpeech(params: Bundle?) {
+                    if (continuation.isActive) onReady(((System.nanoTime() - startedNs) / 1_000_000).coerceAtLeast(0))
+                }
                 override fun onBeginningOfSpeech() = Unit
                 override fun onRmsChanged(rmsdB: Float) = Unit
                 override fun onBufferReceived(buffer: ByteArray?) = Unit
@@ -52,7 +56,14 @@ class AndroidSpeechRecognizer(private val context: Context, private val allowSys
                 override fun onError(error: Int) {
                     if (continuation.isActive) {
                         if (error == SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS) continuation.resumeWithException(SecurityException("microphone"))
-                        else continuation.resumeWithException(IllegalStateException("Recognition unavailable: $error"))
+                        else continuation.resumeWithException(IllegalStateException(when (error) {
+                            SpeechRecognizer.ERROR_NO_MATCH -> "STT_NO_MATCH"
+                            SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "STT_SILENCE"
+                            SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "STT_NETWORK_TIMEOUT"
+                            SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "STT_BUSY"
+                            SpeechRecognizer.ERROR_CLIENT -> "STT_INTERRUPTED"
+                            else -> "STT_ERROR_$error"
+                        }))
                     }
                 }
                 override fun onResults(results: Bundle?) {
@@ -66,7 +77,7 @@ class AndroidSpeechRecognizer(private val context: Context, private val allowSys
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
                 putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             })
-        }.also { cancel() }
+        } } finally { cancel() }
     }
     override fun cancel() { recognizer?.cancel(); recognizer?.destroy(); recognizer = null }
 }
@@ -95,6 +106,7 @@ class AndroidTextToSpeech(context: Context) : TextToSpeechProvider {
             override fun onDone(utteranceId: String?) { finish(utteranceId, null) }
             @Deprecated("Platform callback")
             override fun onError(utteranceId: String?) { finish(utteranceId, IllegalStateException("TTS unavailable")) }
+            override fun onError(utteranceId: String?, errorCode: Int) { finish(utteranceId, IllegalStateException("TTS_ERROR_$errorCode")) }
         })
     }
 
@@ -110,13 +122,13 @@ class AndroidTextToSpeech(context: Context) : TextToSpeechProvider {
     override suspend fun speak(text: String) = withContext(Dispatchers.Main.immediate) {
         check(ready.await())
         val localVoices = engine.voices.orEmpty().filter { it.locale.toLanguageTag().equals("es-ES", true) && !it.isNetworkConnectionRequired && "notInstalled" !in it.features.orEmpty() }
-        val voice = if (selectedVoice.isBlank()) localVoices.firstOrNull() else localVoices.firstOrNull { it.name == selectedVoice }
+        val voice = (if (selectedVoice.isBlank()) localVoices.firstOrNull() else localVoices.firstOrNull { it.name == selectedVoice })
             ?: error("No hay voz local es-ES seleccionada")
         check(engine.setVoice(voice) == TextToSpeech.SUCCESS)
         engine.setSpeechRate(rate.coerceIn(0.7f, 1.3f)); engine.setPitch(pitch.coerceIn(0.7f, 1.3f))
         suspendCancellableCoroutine<Unit> { continuation ->
             val id = UUID.randomUUID().toString()
-            synchronized(this@AndroidTextToSpeech) { pending = id to continuation }
+            synchronized(this@AndroidTextToSpeech) { pending?.second?.cancel(); pending = id to continuation }
             continuation.invokeOnCancellation { engine.stop(); synchronized(this@AndroidTextToSpeech) { if (pending?.first == id) pending = null } }
             if (engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, id) == TextToSpeech.ERROR) finish(id, IllegalStateException("TTS failed"))
         }

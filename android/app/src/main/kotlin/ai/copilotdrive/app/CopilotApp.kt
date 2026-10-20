@@ -22,13 +22,15 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
     onBluetoothPermission: () -> Unit = {}) {
     val state by model.state.collectAsStateWithLifecycle()
     var settings by rememberSaveable { mutableStateOf(false) }
+    var deviceLab by rememberSaveable { mutableStateOf(false) }
     var confirmSettings by remember { mutableStateOf(false) }
     CopilotTheme {
         Surface(Modifier.fillMaxSize().safeDrawingPadding(), color = MaterialTheme.colorScheme.background) {
             when {
                 !state.preferencesLoaded -> Box(Modifier.padding(32.dp)) { Text("Preparando CopilotDrive…") }
                 !state.preferences.onboarded -> Onboarding { model.savePreferences(state.preferences.copy(onboarded = true)) }
-                settings -> SettingsScreen(state, { settings = false }, model::savePreferences, { settings = false; onMicrophone() }, onContacts, onMediaPermission, onBluetoothPermission, model::setDemoMedia, model.androidMedia::select, model)
+                deviceLab -> DeviceLabScreen(model, { deviceLab = false })
+                settings -> SettingsScreen(state, { settings = false }, model::savePreferences, { settings = false; onMicrophone() }, onContacts, onMediaPermission, onBluetoothPermission, model::setDemoMedia, model.androidMedia::select, model, { deviceLab = true })
                 else -> DashboardScreen(state, { confirmSettings = true }, onMicrophone, model::cancel, model::demo, model::mediaControl)
             }
             if (confirmSettings) {
@@ -39,7 +41,7 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
             }
         }
     }
-    BackHandler(settings) { settings = false }
+    BackHandler(settings || deviceLab) { if (deviceLab) deviceLab = false else settings = false }
 }
 
 @Composable
@@ -64,6 +66,7 @@ private fun SettingsScreen(
     state: DashboardState, onBack: () -> Unit, onSave: (VoicePreferences) -> Unit,
     onMicrophone: () -> Unit, onContacts: () -> Unit, onMediaPermission: () -> Unit,
     onBluetoothPermission: () -> Unit, onDemoMedia: (Boolean) -> Unit, onSelectSession: (String) -> Unit, model: DashboardViewModel,
+    onDeviceLab: () -> Unit,
 ) {
     var voiceMenu by remember { mutableStateOf(false) }
     var rate by remember(state.preferences.rate) { mutableFloatStateOf(state.preferences.rate) }
@@ -75,6 +78,7 @@ private fun SettingsScreen(
     var token by remember { mutableStateOf("") }
     var consentDialog by remember { mutableStateOf(false) }
     var obdConsentDialog by remember { mutableStateOf(false) }
+    var providerTestDialog by remember { mutableStateOf(false) }
     LazyColumn(contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.testTag("settings")) {
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -82,6 +86,13 @@ private fun SettingsScreen(
                 OutlinedButton(onClick = onBack, modifier = Modifier.heightIn(min = 56.dp)) { Text("Volver") }
             }
             Text("Configuración de laboratorio · Movimiento desconocido", color = Amber)
+        }
+        item {
+            DashboardCard(Modifier.fillMaxWidth()) {
+                Eyebrow("LABORATORIO DEL DISPOSITIVO")
+                Text("Comprueba disponibilidad y revisa observaciones sin iniciar pruebas físicas automáticamente.", color = Muted)
+                OutlinedButton(onClick = onDeviceLab, modifier = Modifier.testTag("open-device-lab")) { Text("Abrir laboratorio") }
+            }
         }
         item {
             DashboardCard(Modifier.fillMaxWidth()) {
@@ -190,7 +201,7 @@ private fun SettingsScreen(
                 }
                 Text("En este sprint solo se envía el texto y el historial efímero. No se envían contactos, ubicación ni telemetría.", color = Muted, fontSize = 13.sp)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedButton(onClick = model::testProvider, enabled = state.preferences.ai.enabled && state.preferences.ai.consented) { Text("Probar conexión") }
+                    OutlinedButton(onClick = { providerTestDialog = true }, enabled = state.preferences.ai.enabled && state.preferences.ai.consented) { Text("Probar conexión") }
                     OutlinedButton(onClick = { onSave(state.preferences.copy(ai = state.preferences.ai.copy(enabled = false, consented = false))) }) { Text("Revocar permiso") }
                 }
                 OutlinedButton(onClick = model::clearConversation) { Text("Borrar conversación") }
@@ -218,6 +229,11 @@ private fun SettingsScreen(
         text = { Text("La app leerá RPM, velocidad, refrigerante y combustible cuando el vehículo lo admita. No es un diagnóstico certificado. La telemetría permanece local y no se envía a proveedores de IA.") },
         confirmButton = { TextButton(onClick = { obdConsentDialog = false; model.connectObd() }) { Text("Conectar") } },
         dismissButton = { TextButton(onClick = { obdConsentDialog = false }) { Text("Cancelar") } })
+    if (providerTestDialog) AlertDialog(onDismissRequest = { providerTestDialog = false },
+        title = { Text("Consulta de prueba externa") },
+        text = { Text("Se enviará una frase fija al proveedor configurado. Puede consumir cuota. No se enviará telemetría, contactos ni ubicación.") },
+        confirmButton = { TextButton(onClick = { providerTestDialog = false; model.testProvider() }) { Text("Enviar prueba") } },
+        dismissButton = { TextButton(onClick = { providerTestDialog = false }) { Text("Cancelar") } })
 }
 
 fun capabilityLabel(status: CapabilityStatus): String = when (status) {

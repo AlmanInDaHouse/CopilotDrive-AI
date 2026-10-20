@@ -40,4 +40,24 @@ class AppFlowTest {
         compose.onNodeWithText("Conectar").assertIsNotEnabled()
         compose.onNodeWithText("Volver al simulador").assertExists()
     }
+
+    @Test fun deviceLabRunsPassiveChecksWithoutHardware() {
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("onboarding").fetchSemanticsNodes().isNotEmpty() ||
+                compose.onAllNodesWithTag("dashboard").fetchSemanticsNodes().isNotEmpty()
+        }
+        if (compose.onAllNodesWithTag("onboarding").fetchSemanticsNodes().isNotEmpty())
+            compose.onNodeWithTag("accept-onboarding").performScrollTo().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("dashboard").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithText("Ajustes").performClick()
+        compose.onNodeWithText("Estoy en un entorno detenido").performClick()
+        compose.onNodeWithTag("settings").performScrollToNode(hasTestTag("open-device-lab"))
+        compose.onNodeWithTag("open-device-lab").performClick()
+        compose.onNodeWithTag("device-lab").assertExists()
+        compose.onNodeWithTag("run-local-diagnostics").performClick()
+        compose.onNodeWithTag("device-lab").performScrollToNode(hasText("Resultados (", substring = true))
+        compose.onNodeWithText("Resultados (", substring = true).assertExists()
+        compose.onNodeWithText("Borrar historial").performClick()
+        compose.onNodeWithText("Sin comprobaciones en esta sesión.").assertExists()
+    }
 }

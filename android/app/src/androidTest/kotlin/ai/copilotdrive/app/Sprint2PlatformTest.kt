@@ -16,6 +16,28 @@ import kotlin.concurrent.thread
 
 @RunWith(AndroidJUnit4::class)
 class Sprint2PlatformTest {
+    @Test fun localServerErrorsMapToTypedProviderCodes() = runBlocking {
+        for ((status, expected) in listOf(401 to "AUTH", 429 to "RATE_LIMIT", 503 to "SERVER")) {
+            val server = ServerSocket(0, 1, InetAddress.getByName("127.0.0.1"))
+            server.soTimeout = 5_000
+            val worker = thread {
+                server.use { listener -> listener.accept().use { socket ->
+                    socket.soTimeout = 5_000
+                    val reader = socket.getInputStream().bufferedReader()
+                    while (!reader.readLine().isNullOrEmpty()) { }
+                    socket.getOutputStream().write("HTTP/1.1 $status Test\r\nContent-Length: 2\r\nConnection: close\r\n\r\n{}".toByteArray())
+                    socket.getOutputStream().flush()
+                } }
+            }
+            val provider = OpenAICompatibleProvider(
+                { ProviderConfiguration(enabled = true, endpoint = "http://127.0.0.1:${server.localPort}/v1", model = "mock", consented = true) },
+                { null }, AndroidHTTPTransport(), allowLocalHttp = true)
+            val result = provider.generate(AIRequest("Prueba de estado."))
+            worker.join(6_000)
+            assertEquals(expected, (result as AIResponse.Unavailable).error.code)
+        }
+    }
+
     @Test fun credentialIsEncryptedInPrivateStorageAndCanBeRemoved() {
         val context = InstrumentationRegistry.getInstrumentation().targetContext
         val secrets = KeystoreSecretStore(context)

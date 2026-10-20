@@ -20,6 +20,8 @@ class VoiceSessionCoordinator(
     private val assistant: AssistantOrchestrator,
     private val focus: AudioFocusCoordinator,
     private val clock: Clock,
+    private val onTiming: (VoiceMetric, Long) -> Unit = { _, _ -> },
+    private val onFailure: (String, String) -> Unit = { _, _ -> },
     private val hasMicrophonePermission: () -> Boolean,
 ) {
     private val mutable = MutableStateFlow(VoiceSessionState())
@@ -47,29 +49,41 @@ class VoiceSessionCoordinator(
                 tts.stop()
                 val text = demo ?: run {
                     transition(VoiceState.LISTENING, "Micrófono activo · Te escucho")
+                    val recognitionStart = System.nanoTime()
                     withTimeout(15_000) { stt.recognize { transition(VoiceState.TRANSCRIBING, "Procesando voz…") } }
+                        .also { onTiming(VoiceMetric.RECOGNITION, ((System.nanoTime() - recognitionStart) / 1_000_000).coerceAtLeast(0)) }
                 }
                 check(text.isNotBlank()) { "No se ha detectado voz" }
                 transition(VoiceState.UNDERSTANDING, "Interpretando petición…")
                 val request = AssistantRequest("voice-$started-$token", "foreground", text, if (demo == null) InputMode.VOICE else InputMode.DEMO, clock.now())
                 transition(VoiceState.EXECUTING, "Consultando…")
+                val orchestratorStart = System.nanoTime()
                 val result = assistant.answer(request)
+                onTiming(VoiceMetric.ORCHESTRATOR, ((System.nanoTime() - orchestratorStart) / 1_000_000).coerceAtLeast(0))
                 transition(VoiceState.SPEAKING, result.message)
                 val replyErrorSource = if (result.toolId == "assistant" && result.errorCode != null) "AI" else null
                 if (token == generation) mutable.value = mutable.value.copy(errorSource = replyErrorSource)
+                val ttsStart = System.nanoTime()
                 withTimeout(20_000) { tts.speak(result.message) }
+                onTiming(VoiceMetric.TTS_CALLBACK, ((System.nanoTime() - ttsStart) / 1_000_000).coerceAtLeast(0))
                 transition(VoiceState.IDLE)
                 if (token == generation) mutable.value = mutable.value.copy(errorSource = replyErrorSource)
             } catch (_: TimeoutCancellationException) {
                 val timedOutWhileSpeaking = mutable.value.state == VoiceState.SPEAKING
+                onFailure(if (timedOutWhileSpeaking) "TTS" else "STT", if (timedOutWhileSpeaking) "TTS_TIMEOUT" else "STT_TIMEOUT")
                 transition(VoiceState.ERROR, if (timedOutWhileSpeaking) mutable.value.message + " · Voz no disponible (tiempo agotado)." else "Tiempo de espera agotado. Puedes volver a intentarlo.")
                 if (token == generation) mutable.value = mutable.value.copy(errorSource = if (timedOutWhileSpeaking) "TTS" else "STT")
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: SecurityException) {
+                onFailure("STT", "PERMISSION_OR_CONSENT")
                 transition(VoiceState.PERMISSION_REQUIRED, "Falta permiso o consentimiento para reconocimiento.")
-            } catch (_: Exception) {
+            } catch (failure: Exception) {
                 val speaking = mutable.value.state == VoiceState.SPEAKING
+                val stage = if (speaking) "TTS" else if (mutable.value.state == VoiceState.EXECUTING) "ORCHESTRATOR" else "STT"
+                val code = failure.message?.takeIf { it in setOf("STT_NO_MATCH", "STT_SILENCE", "STT_NETWORK_TIMEOUT", "STT_BUSY", "STT_INTERRUPTED") }
+                    ?: "${stage}_ERROR"
+                onFailure(stage, code)
                 val message = if (speaking) mutable.value.message + " · Voz no disponible." else "Voz no disponible. Revisa motor, permisos y conexión."
                 transition(VoiceState.ERROR, message)
                 mutable.value = mutable.value.copy(errorSource = if (speaking) "TTS" else "STT")
@@ -90,6 +104,7 @@ class VoiceSessionCoordinator(
         tts.stop()
         focus.release()
         assistant.cancelPending()
+        onFailure("VOICE", "CANCELLED")
         mutable.value = VoiceSessionState(VoiceState.CANCELLED, "Micrófono apagado · Cancelado")
     }
 }

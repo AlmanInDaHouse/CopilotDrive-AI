@@ -180,6 +180,21 @@ class ScenarioTest {
         assertEquals(VoiceState.ERROR, voice.state.value.state)
     }
 
+    @Test fun `voice failure diagnostics identify stage without leaking exception text`() = runTest {
+        val h = TestHarness()
+        val failures = mutableListOf<Pair<String, String>>()
+        val voice = VoiceSessionCoordinator(this, h.stt, h.tts, h.assistant, h.focus, h.clock,
+            onFailure = { stage, code -> failures += stage to code }, hasMicrophonePermission = { true })
+        h.stt.delayMs = 20_000
+        voice.listen(); advanceUntilIdle()
+        assertTrue(failures.contains("STT" to "STT_TIMEOUT"))
+        h.stt.delayMs = 0
+        h.tts.failure = IllegalStateException("secret-from-provider")
+        voice.listen(); advanceUntilIdle()
+        assertTrue(failures.contains("TTS" to "TTS_ERROR"))
+        assertTrue(failures.none { it.second.contains("secret") })
+    }
+
     @Test fun `tts timeout preserves visual answer and identifies voice fault`() = runTest {
         val h = TestHarness()
         h.tts.delayMs = 21_000

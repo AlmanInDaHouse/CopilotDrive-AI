@@ -1,12 +1,12 @@
 # Limitaciones conocidas
 
-PR #1, #2 y #3 están fusionadas. Sprint 3 permanece en una rama local sin CI remoto propio; el build, lint y tests locales se describen en `SPRINT3_REPORT.md`.
+PR #1 a #4 están fusionadas. Sprint 4 está en una rama local sin CI remoto propio; los resultados actuales se describen en `SPRINT4_REPORT.md`.
 
 | Área | Limitación e impacto | Próxima validación/cambio |
 |---|---|---|
 | Hardware | Sin vehículo ni pantalla aftermarket física; no homologación ni uso en marcha | Matriz de dispositivos en laboratorio |
 | Telemetría Android | RFCOMM y descubrimiento PID implementados y probados con fake; ningún adaptador o coche físico validado | Matriz física de teléfono, adaptador y vehículo |
-| IA | Adaptador Chat Completions real implementado, pero no validado con un servidor comercial ni uno local real | Probar interoperabilidad y respuesta bajo condiciones de red reales |
+| IA | Adaptador Chat Completions probado contra servidor HTTP loopback en emulador, pero no contra proveedor comercial | Probar interoperabilidad y respuesta bajo condiciones de red reales |
 | Contexto IA | Solo texto e historial efímero; vehículo/contactos/ubicación no se transmiten; toggle de contexto deshabilitado | Diseñar contexto por dato con consentimiento específico |
 | Credenciales | Keystore cifra token local, pero un dispositivo comprometido o controlado por el usuario puede exponerlo al usar la app | Recomendar credencial con cuota y revocación; prueba de backup/restore |
 | Voz | STT/TTS depende de servicios y voces instalados; el emulador API 35 informó motor TTS ausente y 0 voces locales es-ES. Fallback STT puede usar red tras consentimiento | Prueba acústica física, llamadas entrantes, ruido, motores OEM |
@@ -24,3 +24,8 @@ PR #1, #2 y #3 están fusionadas. Sprint 3 permanece en una rama local sin CI re
 
 Los fakes prueban contratos, no disponibilidad de servicios de terceros. Ver TEST_RESULTS.md para qué
 se ejecutó realmente. No se debe convertir una especificación o una prueba definida en una afirmación de soporte.
+# Sprint 4 — límites actuales
+
+El Device Lab informa disponibilidad y resultados técnicos. Sus checks no certifican micrófono, voz audible, RFCOMM físico, lectura del coche ni compatibilidad comercial. El nivel de evidencia permanece `PENDING` en la app; las observaciones físicas se documentan manualmente. No existe exportación de diagnóstico ni memoria persistente de resultados. p50/p95 de voz requieren al menos 20 muestras por etapa y no representan calidad acústica.
+
+El contrato de contexto vehicular no transmite datos al proveedor. Las pruebas IA opcionales pueden consumir cuota. La conectividad, modelo y tool calling de cada proveedor compatible deben probarse por separado. El simulador y el servidor HTTP local no garantizan compatibilidad de adaptadores ni APIs externas.\n
