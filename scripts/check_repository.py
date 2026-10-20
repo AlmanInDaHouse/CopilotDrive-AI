@@ -14,10 +14,12 @@ def main():
     assert permissions == {
         'android.permission.RECORD_AUDIO', 'android.permission.READ_CONTACTS', 'android.permission.INTERNET',
         'android.permission.BLUETOOTH', 'android.permission.BLUETOOTH_CONNECT',
+        'android.permission.ACCESS_COARSE_LOCATION',
     }, permissions
     legacy = next(p for p in manifest.findall('uses-permission') if p.attrib[ANDROID + 'name'] == 'android.permission.BLUETOOTH')
     assert legacy.attrib[ANDROID + 'maxSdkVersion'] == '30'
-    assert not any(p.attrib[ANDROID + 'name'] in {'android.permission.BLUETOOTH_SCAN', 'android.permission.ACCESS_FINE_LOCATION'} for p in manifest.findall('uses-permission'))
+    assert not any(p.attrib[ANDROID + 'name'] in {'android.permission.BLUETOOTH_SCAN', 'android.permission.ACCESS_FINE_LOCATION',
+        'android.permission.ACCESS_BACKGROUND_LOCATION'} for p in manifest.findall('uses-permission'))
     assert manifest.find('application').attrib[ANDROID + 'usesCleartextTraffic'] == 'false'
     assert manifest.find('application').attrib[ANDROID + 'allowBackup'] == 'false'
     main_network = ET.parse(ROOT / 'android/app/src/main/res/xml/network_security_config.xml').getroot()

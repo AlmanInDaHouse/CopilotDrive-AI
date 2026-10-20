@@ -14,7 +14,9 @@ android {
         versionName = "0.2.0-debug"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    buildFeatures { compose = true }
+    buildFeatures { compose = true; buildConfig = true }
+    val placesKey = providers.gradleProperty("PLACES_ANDROID_API_KEY").orElse(providers.environmentVariable("PLACES_ANDROID_API_KEY")).orElse("").get()
+    defaultConfig { buildConfigField("String", "PLACES_ANDROID_API_KEY", "\"${placesKey.replace("\\", "\\\\").replace("\"", "\\\"")}\"") }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     kotlinOptions { jvmTarget = "17" }
     lint { abortOnError = true; checkReleaseBuilds = true }
@@ -30,6 +32,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.datastore:datastore-preferences:1.1.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
+    implementation("com.google.android.libraries.places:places:5.1.1")
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation(platform("androidx.compose:compose-bom:2025.04.01"))
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

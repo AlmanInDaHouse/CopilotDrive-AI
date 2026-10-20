@@ -50,6 +50,7 @@ fun DashboardScreen(
     onCancel: () -> Unit,
     onDemo: (String) -> Unit,
     onMedia: (MediaControl) -> Unit,
+    onPlaces: () -> Unit = {},
 ) {
     val busy = state.voice.state in setOf(VoiceState.LISTENING, VoiceState.TRANSCRIBING, VoiceState.UNDERSTANDING, VoiceState.EXECUTING, VoiceState.SPEAKING)
     val microphoneActive = state.voice.state in setOf(VoiceState.LISTENING, VoiceState.TRANSCRIBING)
@@ -75,6 +76,7 @@ fun DashboardScreen(
                 }
                 Text(state.clock, fontSize = 24.sp, fontWeight = FontWeight.Light, modifier = Modifier.padding(horizontal = 16.dp))
                 OutlinedButton(onClick = onSettings, modifier = Modifier.heightIn(min = 56.dp), enabled = !busy) { Text("Ajustes") }
+                OutlinedButton(onClick = onPlaces, modifier = Modifier.heightIn(min = 56.dp).testTag("open-places"), enabled = !busy) { Text("Lugares") }
             }
         }
         item {

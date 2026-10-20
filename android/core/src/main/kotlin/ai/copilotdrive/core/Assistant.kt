@@ -30,7 +30,9 @@ class IntentResolver {
         Regex("^(?:llama a|busca contacto) (.+)$", RegexOption.IGNORE_CASE).matchEntire(original)?.let {
             return ToolRequest("contacts.search", mapOf("name" to it.groupValues[1]))
         }
-        if (normalized in setOf("restaurantes cercanos", "busca restaurantes cercanos")) return ToolRequest("places.search_nearby", mapOf("query" to "restaurantes"))
+        Regex("^(?:busca|buscar|muestrame) (restaurantes|gasolineras|aparcamientos|cafeterias|cafes|puntos de interes)(?: cercanos| cerca)?$")
+            .matchEntire(normalized)?.let { return ToolRequest("places.search_nearby", mapOf("query" to it.groupValues[1])) }
+        if (normalized == "restaurantes cercanos") return ToolRequest("places.search_nearby", mapOf("query" to "restaurantes"))
         return null
     }
 }
@@ -44,17 +46,45 @@ class AssistantOrchestrator(
 ) {
     private data class Pending(val contacts: List<Contact>, val expiresAt: Long)
     private var pending: Pending? = null
-    fun cancelPending() { pending = null }
-    fun clearConversation(sessionId: String) { conversation.clear(sessionId); pending = null }
-    fun clearAllConversations() { conversation.clearAll(); pending = null }
+    private var pendingPlaceId: String? = null
+    fun cancelPending() { pending = null; pendingPlaceId = null }
+    fun clearConversation(sessionId: String) { conversation.clear(sessionId); cancelPending() }
+    fun clearAllConversations() { conversation.clearAll(); cancelPending() }
 
     suspend fun answer(request: AssistantRequest): ToolResult {
         if (request.userText.length > 400 || request.userText.isBlank()) return ToolResult.denied("assistant", "INVALID_INPUT", "Di un comando breve.")
         val normalized = normalize(request.userText).removePrefix("jarvis ").removePrefix("jarvis, ")
         if (normalized in setOf("cancelar", "cancela", "no")) {
-            pending = null
+            cancelPending()
             return ToolResult("assistant", ExecutionStatus.SUCCESS, "Acción cancelada.")
         }
+        if (normalized in setOf("si", "confirmar", "confirmo") && pendingPlaceId != null) {
+            val id = pendingPlaceId!!
+            pendingPlaceId = null
+            if (tools.selectedPlaceId() != id)
+                return ToolResult.denied("navigation.open_selected_place", "SELECTION_MISSING", "El resultado ya no está disponible.")
+            return tools.execute(ToolRequest("navigation.open_selected_place", mapOf("provider" to "maps")))
+        }
+        if (normalized.contains("cuanto tardaria") || normalized.contains("tiempo de llegada"))
+            return ToolResult("assistant", ExecutionStatus.SUCCESS, "No dispongo de una estimación de llegada verificable. Maps o Waze pueden calcularla al abrir el destino.")
+        if (normalized.contains("mejor valorados")) {
+            val rated = tools.placeResults().filter { it.rating != null }.sortedByDescending { it.rating }.take(3)
+            return ToolResult("places.get_selection", ExecutionStatus.SUCCESS, if (rated.isEmpty())
+                "No hay valoraciones suficientes en los resultados actuales." else rated.mapIndexed { index, place ->
+                    "${index + 1}. ${place.name}: ${place.rating}/5${place.ratingCount?.let { " ($it reseñas)" } ?: ""}"
+                }.joinToString(". "))
+        }
+        Regex("^(?:llevame al|navega al) (primero|segundo|tercero|1|2|3)$").matchEntire(normalized)?.let { match ->
+            val index = mapOf("primero" to 0, "segundo" to 1, "tercero" to 2, "1" to 0, "2" to 1, "3" to 2)[match.groupValues[1]]!!
+            val place = tools.placeResults().getOrNull(index)
+                ?: return ToolResult.denied("places.select_result", "SELECTION_MISSING", "No hay un resultado vigente con ese número.")
+            val selected = tools.execute(ToolRequest("places.select_result", mapOf("id" to place.providerId!!)))
+            if (selected.executionStatus != ExecutionStatus.SUCCESS) return selected
+            pendingPlaceId = place.providerId
+            return ToolResult("navigation.open_selected_place", ExecutionStatus.CONFIRMATION_REQUIRED,
+                "¿Abrir Google Maps con ${place.name}? Di confirmar o cancelar.")
+        }
+        pendingPlaceId = null
         val choice = pending
         if (normalized in setOf("si", "confirmar", "confirmo")) {
             pending = null // Consume before any suspension; no duplicate dial.
@@ -84,7 +114,7 @@ class AssistantOrchestrator(
         val response = if (resolved == null) try {
             withTimeout(31_000) {
                 ai?.generate(AIRequest(request.userText, conversation.history(request.sessionId), tools.definitions.values
-                    .filter { it.id !in setOf("contacts.search", "phone.open_dialer", "places.search_nearby") }, request.locale))
+                    .filter { it.id !in setOf("contacts.search", "phone.open_dialer", "places.search_nearby", "places.select_result", "navigation.open_selected_place") }, request.locale))
             }
         } catch (_: TimeoutCancellationException) {
             AIResponse.Unavailable(AIError("TIMEOUT", "La IA ha agotado el tiempo de espera."))
@@ -99,7 +129,7 @@ class AssistantOrchestrator(
         if (response is AIResponse.Invalid) return ToolResult.denied("assistant", response.error.code, response.error.message)
         val proposed = resolved ?: (response as? AIResponse.ProposedTool)?.proposal?.asRequest()
         if (proposed == null) return ToolResult("assistant", ExecutionStatus.FAILED, "IA no disponible.", "AI_UNAVAILABLE")
-        if (resolved == null && proposed.toolId in setOf("contacts.search", "phone.open_dialer", "places.search_nearby"))
+        if (resolved == null && proposed.toolId in setOf("contacts.search", "phone.open_dialer", "places.search_nearby", "places.select_result", "navigation.open_selected_place"))
             return ToolResult.denied(proposed.toolId, "AI_TOOL_DENIED", "Esa acción requiere una petición directa.")
         val result = tools.execute(proposed)
         // Only a direct user contact command can establish pending confirmation; AI output cannot.

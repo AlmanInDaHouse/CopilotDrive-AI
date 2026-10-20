@@ -9,12 +9,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import ai.copilotdrive.core.PlaceCategory
 
 class MainActivity : ComponentActivity() {
     private val model: DashboardViewModel by viewModels()
     private val microphone = registerForActivityResult(ActivityResultContracts.RequestPermission()) { model.listen() }
     private val contacts = registerForActivityResult(ActivityResultContracts.RequestPermission()) { model.foreground() }
     private val bluetooth = registerForActivityResult(ActivityResultContracts.RequestPermission()) { model.refreshPairedBluetooth() }
+    private var pendingPlaceCategory: PlaceCategory? = null
+    private val location = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        pendingPlaceCategory?.let(model::searchPlaces)
+        pendingPlaceCategory = null
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -24,6 +30,13 @@ class MainActivity : ComponentActivity() {
                 onBluetoothPermission = {
                     if (Build.VERSION.SDK_INT >= 31) bluetooth.launch(Manifest.permission.BLUETOOTH_CONNECT)
                     else model.refreshPairedBluetooth()
+                },
+                onPlaceSearch = { category ->
+                    if (model.state.value.places.demo || checkSelfPermission(Manifest.permission.ACCESS_COARSE_LOCATION) == android.content.pm.PackageManager.PERMISSION_GRANTED) model.searchPlaces(category)
+                    else {
+                        pendingPlaceCategory = category
+                        location.launch(arrayOf(Manifest.permission.ACCESS_COARSE_LOCATION))
+                    }
                 },
                 onMediaPermission = {
                     val intent = Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)

@@ -59,7 +59,26 @@ class FakeContactsProvider : ContactProvider {
 }
 
 class FakePlacesProvider : PlacesProvider {
-    override suspend fun searchNearby(query: String) = listOf(Place("Lugar ficticio de prueba", 4.2, 1.0, true))
+    var results = listOf(PlaceSearchResult("demo-1", "Lugar ficticio de prueba", PlaceCategory.RESTAURANT,
+        "Dirección de demostración", Coordinates(40.4168, -3.7038), 4.2, 12, null, null,
+        "FAKE · SIMULACIÓN", 1_700_000_000_000, Availability.SIMULATED))
+    var error: PlacesProviderError? = null
+    var calls = 0
+    var delayMs = 0L
+    var onSearch: (() -> Unit)? = null
+    override suspend fun searchNearby(request: PlaceSearchRequest): List<PlaceSearchResult> {
+        calls++
+        onSearch?.invoke()
+        delay(delayMs)
+        error?.let { throw it }
+        return results.map { it.copy(category = request.category, capturedAt = request.center.capturedAt) }
+    }
+}
+
+class FakeLocationProvider(var snapshot: LocationSnapshot = LocationSnapshot(Coordinates(40.4168, -3.7038),
+    500f, 1_700_000_000_000, "fake", LocationAvailability.AVAILABLE)) : LocationProvider {
+    var calls = 0
+    override suspend fun current(): LocationSnapshot { calls++; return snapshot }
 }
 
 class FakeAIProvider(var proposal: ToolRequest? = null) : AIProvider {

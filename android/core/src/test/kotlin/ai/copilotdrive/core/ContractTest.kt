@@ -50,6 +50,12 @@ class ContractTest {
         }
     }
 
+    @Test fun `Waze uses ll for validated coordinates and q for addresses`() {
+        assertEquals("https://waze.com/ul?ll=40.4168%2C-3.7038&navigate=yes", NavigationUris.waze("40.4168,-3.7038"))
+        assertTrue(NavigationUris.waze("Gran Via 1").contains("?q=Gran%20Via%201"))
+        assertThrows(IllegalArgumentException::class.java) { NavigationUris.waze("999,0") }
+    }
+
     @Test fun `read only PID parser rejects truncated and unsupported packets`() {
         assertEquals(1726.0, ObdDecoder.decode(ReadPid.RPM, "41 0C 1A F8 >")!!, 0.01)
         assertNull(ObdDecoder.decode(ReadPid.RPM, "41 0C 1A >"))

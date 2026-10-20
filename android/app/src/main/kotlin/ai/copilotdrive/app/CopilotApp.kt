@@ -16,22 +16,26 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ai.copilotdrive.app.platform.VoicePreferences
 import ai.copilotdrive.app.ui.*
 import ai.copilotdrive.core.CapabilityStatus
+import ai.copilotdrive.core.PlaceCategory
 
 @Composable
 fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: () -> Unit, onMediaPermission: () -> Unit,
-    onBluetoothPermission: () -> Unit = {}) {
+    onBluetoothPermission: () -> Unit = {}, onPlaceSearch: (PlaceCategory) -> Unit = {}) {
     val state by model.state.collectAsStateWithLifecycle()
     var settings by rememberSaveable { mutableStateOf(false) }
     var deviceLab by rememberSaveable { mutableStateOf(false) }
+    var places by rememberSaveable { mutableStateOf(false) }
     var confirmSettings by remember { mutableStateOf(false) }
     CopilotTheme {
         Surface(Modifier.fillMaxSize().safeDrawingPadding(), color = MaterialTheme.colorScheme.background) {
             when {
                 !state.preferencesLoaded -> Box(Modifier.padding(32.dp)) { Text("Preparando CopilotDrive…") }
                 !state.preferences.onboarded -> Onboarding { model.savePreferences(state.preferences.copy(onboarded = true)) }
-                deviceLab -> DeviceLabScreen(model, { deviceLab = false })
+                deviceLab -> DeviceLabScreen(model, { deviceLab = false }, { deviceLab = false; places = true })
+                places -> PlacesScreen(state, model, { places = false }, onPlaceSearch)
                 settings -> SettingsScreen(state, { settings = false }, model::savePreferences, { settings = false; onMicrophone() }, onContacts, onMediaPermission, onBluetoothPermission, model::setDemoMedia, model.androidMedia::select, model, { deviceLab = true })
-                else -> DashboardScreen(state, { confirmSettings = true }, onMicrophone, model::cancel, model::demo, model::mediaControl)
+                else -> DashboardScreen(state, { confirmSettings = true }, onMicrophone, model::cancel, model::demo, model::mediaControl,
+                    onPlaces = { places = true; model.cancel() })
             }
             if (confirmSettings) {
                 AlertDialog(onDismissRequest = { confirmSettings = false }, title = { Text("Configuración de laboratorio") },
@@ -41,7 +45,7 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
             }
         }
     }
-    BackHandler(settings || deviceLab) { if (deviceLab) deviceLab = false else settings = false }
+    BackHandler(settings || deviceLab || places) { if (places) places = false else if (deviceLab) deviceLab = false else settings = false }
 }
 
 @Composable
