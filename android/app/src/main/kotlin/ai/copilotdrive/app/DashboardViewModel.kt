@@ -145,7 +145,13 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
     private val capabilities = CapabilityRegistry(permissionProvider)
-    private val tools = ToolRegistry(PolicyEngine(capabilities), vehicle, media, navigation, contacts, places)
+    private val journeyMutable = MutableStateFlow<List<VoiceJourneyStage>>(emptyList())
+    val voiceJourney = journeyMutable.asStateFlow()
+    private fun recordJourney(stage: VoiceJourneyStage) {
+        journeyMutable.update { if (stage == VoiceJourneyStage.REQUEST_STARTED) listOf(stage) else (it + stage).takeLast(32) }
+    }
+    fun clearVoiceJourney() { journeyMutable.value = emptyList() }
+    private val tools = ToolRegistry(PolicyEngine(capabilities), vehicle, media, navigation, contacts, places, ::recordJourney)
     private val aiProvider = OpenAICompatibleProvider(
         { mutable.value.preferences.ai }, { secretAccess.withLock { withContext(Dispatchers.IO) { secrets.get() } } }, AndroidHTTPTransport(),
         allowLocalHttp = (app.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0,
@@ -153,7 +159,10 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val assistant = AssistantOrchestrator(tools, clock, aiProvider)
     private val focus: AndroidAudioFocus = AndroidAudioFocus(app) { cancel() }
     private val voice: VoiceSessionCoordinator = VoiceSessionCoordinator(viewModelScope, stt, tts, assistant, focus, clock,
-        ::recordVoiceMetric, ::recordVoiceFailure, { capabilities.available("microphone.available") })
+        ::recordVoiceMetric, ::recordVoiceFailure, onJourney = ::recordJourney,
+        hasMicrophonePermission = { capabilities.available("microphone.available") })
+    private val acousticProbe = AcousticProbe(viewModelScope, tts, focus)
+    val acousticState = acousticProbe.state
     private var ticker: Job? = null
 
     init {
@@ -301,10 +310,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             description = "Etapa de voz $stage: $code. La respuesta escrita permanece disponible.",
             correctiveAction = if (code == "CANCELLED") null else "Revisa permisos, servicio y voz instalada; reintenta manualmente."))
     }
-    fun listen() { if (mutable.value.preferences.onboarded) { voiceProbe?.cancel(); voiceProbe = null; voice.listen() } }
-    fun demo(text: String) { if (mutable.value.preferences.onboarded) { voiceProbe?.cancel(); voiceProbe = null; voice.demo(text) } }
-    private var voiceProbe: Job? = null
-    fun cancel() { voiceProbe?.cancel(); voiceProbe = null; voice.cancel() }
+    fun listen() { if (mutable.value.preferences.onboarded) { acousticProbe.cancel(); voice.listen() } }
+    fun demo(text: String) { if (mutable.value.preferences.onboarded) { acousticProbe.cancel(); voice.demo(text) } }
+    fun cancel() { acousticProbe.cancel(); voice.cancel() }
     fun savePreferences(value: VoicePreferences) {
         if (mutable.value.preferences.onboarded) cancel()
         viewModelScope.launch {
@@ -389,22 +397,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             is AIResponse.Invalid -> result.error.message
         }) }
     } }
-    fun testVoice() { cancel(); voiceProbe = viewModelScope.launch {
-        val started = SystemClock.elapsedRealtime()
-        try {
-            kotlinx.coroutines.withTimeout(20_000) { tts.speak("Prueba de voz en español.") }
-            diagnosticHistory.record(DiagnosticCheck("tts.callback", "voice", DiagnosticStatus.PASS, EvidenceLevel.PENDING,
-                System.currentTimeMillis(), (SystemClock.elapsedRealtime() - started).coerceAtLeast(0),
-                description = "Callback TTS completado; calidad audible requiere confirmación humana."))
-            mutable.update { it.copy(notice = "Motor TTS finalizó. Confirma tú si se escuchó bien.") }
-        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
-        catch (_: Exception) {
-            diagnosticHistory.record(DiagnosticCheck("tts.callback", "voice", DiagnosticStatus.FAIL, EvidenceLevel.PENDING,
-                System.currentTimeMillis(), (SystemClock.elapsedRealtime() - started).coerceAtLeast(0), "TTS_ERROR",
-                "La reproducción TTS falló; respuesta escrita disponible.", "Instala o selecciona una voz local es-ES."))
-            mutable.update { it.copy(notice = "No se pudo reproducir la voz; la respuesta escrita sigue disponible.") }
-        }
-    } }
+    fun testVoice() { cancel(); acousticProbe.start() }
+    fun confirmAcoustic(attempt: Long, heard: Boolean) { acousticProbe.confirm(attempt, heard) }
     fun installVoiceData() {
         try {
             app.startActivity(android.content.Intent(android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)

@@ -1,3 +1,24 @@
+# Sprint10 — piloto y acta exacta
+
+Reutiliza DeviceQualification/EvidenceLevel/CompatibilityStatus. Nuevos contratos en
+specs/017-physical-pilot: PhysicalPilotSession, TestDeviceProfile, HumanObservation,
+VoiceQualificationResult, AcousticConfirmation, IntegrationQualification,
+PerformanceEnvironment y PilotReadinessResult. PHYSICALLY_VERIFIED exige entorno
+físico/método manual/evidencia y observación de sesión/build/escenario/fecha/intento
+coincidentes. Callback o estado UI no crean una calificación física.
+
+PHYSICAL_PILOT_GUIDE.md prepara conexión, autorización, firma/permisos/SDK, instalación,
+voz española, integraciones y restauración. `pilot_package.py` solo inspecciona: si se
+indica un serial autorizado, lee modelo/API y firma del APK previo mediante copia
+local temporal; no instala, inicia Activity ni concede permisos. Firma conflictiva
+bloquea, sin desinstalar. Listado exacto de permisos del APK, no solo manifest fuente.
+
+API26 offline: api26_offline.py solo admite el AVD desechable explícito; SVC Wi-Fi
+no soportado por permiso shell, alternativa Settings. Ningún runner automático
+produce PHYSICALLY_VERIFIED. Ver API26_OFFLINE_INVESTIGATION.md para intentos y límites.
+
+## Contratos y procedimientos anteriores conservados
+
 # Calificación de dispositivos — Sprint 8
 
 Sprint 7 está fusionado por PR #8 (328ffec), CI Android/Tests success. Sprint 8 es

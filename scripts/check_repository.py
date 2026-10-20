@@ -6,11 +6,15 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 ANDROID = '{http://schemas.android.com/apk/res/android}'
+TOOLS = '{http://schemas.android.com/tools}'
 
 
 def main():
     manifest = ET.parse(ROOT / 'android/app/src/main/AndroidManifest.xml').getroot()
-    permissions = {p.attrib[ANDROID + 'name'] for p in manifest.findall('uses-permission')}
+    declarations = [p for p in manifest.findall('uses-permission') if p.attrib.get(TOOLS+'node') != 'remove']
+    permissions = {p.attrib[ANDROID + 'name'] for p in declarations}
+    assert any(p.attrib[ANDROID+'name'] == 'android.permission.ACCESS_FINE_LOCATION' and
+        p.attrib.get(TOOLS+'node') == 'remove' for p in manifest.findall('uses-permission'))
     assert permissions == {
         'android.permission.RECORD_AUDIO', 'android.permission.READ_CONTACTS', 'android.permission.INTERNET',
         'android.permission.BLUETOOTH', 'android.permission.BLUETOOTH_CONNECT',
@@ -19,7 +23,7 @@ def main():
     legacy = next(p for p in manifest.findall('uses-permission') if p.attrib[ANDROID + 'name'] == 'android.permission.BLUETOOTH')
     assert legacy.attrib[ANDROID + 'maxSdkVersion'] == '30'
     assert not any(p.attrib[ANDROID + 'name'] in {'android.permission.BLUETOOTH_SCAN', 'android.permission.ACCESS_FINE_LOCATION',
-        'android.permission.ACCESS_BACKGROUND_LOCATION'} for p in manifest.findall('uses-permission'))
+        'android.permission.ACCESS_BACKGROUND_LOCATION'} for p in declarations)
     assert manifest.find('application').attrib[ANDROID + 'usesCleartextTraffic'] == 'false'
     assert manifest.find('application').attrib[ANDROID + 'allowBackup'] == 'false'
     main_network = ET.parse(ROOT / 'android/app/src/main/res/xml/network_security_config.xml').getroot()
