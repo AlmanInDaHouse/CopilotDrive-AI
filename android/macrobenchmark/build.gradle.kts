@@ -11,6 +11,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     targetProjectPath = ":app"
+    experimentalProperties["android.experimental.self-instrumenting"] = true
     buildTypes {
         create("benchmark") {
             isDebuggable = true

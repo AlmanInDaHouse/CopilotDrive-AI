@@ -27,15 +27,16 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
     onBluetoothPermission: () -> Unit = {}, onPlaceSearch: (PlaceCategory) -> Unit = {}) {
     val state by model.state.collectAsStateWithLifecycle()
     val customization by model.customization.state.collectAsStateWithLifecycle()
-    val dashboardIsReady = dashboardReady(state.preferencesLoaded, state.preferences.onboarded,
-        customization.loaded, state.vehicle != null)
-    ReportDrawnWhen { dashboardIsReady }
     var settings by rememberSaveable { mutableStateOf(false) }
     var deviceLab by rememberSaveable { mutableStateOf(false) }
     var places by rememberSaveable { mutableStateOf(false) }
     var confirmSettings by remember { mutableStateOf(false) }
     var confirmEditor by remember { mutableStateOf(false) }
     var laboratoryMode by remember { mutableStateOf(false) }
+    val dashboardIsReady = dashboardReady(state.preferencesLoaded, state.preferences.onboarded,
+        customization.loaded, state.vehicle != null) && !settings && !deviceLab && !places &&
+        customization.edit == null && !confirmSettings && !confirmEditor
+    ReportDrawnWhen { dashboardIsReady }
     LaunchedEffect(customization.laboratory) { if (!customization.laboratory) laboratoryMode = false }
     CopilotTheme {
         Surface(Modifier.fillMaxSize().safeDrawingPadding().semantics { testTagsAsResourceId = true }

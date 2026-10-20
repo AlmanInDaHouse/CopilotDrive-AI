@@ -24,6 +24,23 @@ class StabilityJourneyTest {
         compose.onNodeWithTag(container).performScrollToNode(hasTestTag(tag))
         compose.onNodeWithTag(tag).performClick()
     }
+    @Test fun restoredSettingsDoesNotDeclareDashboardReady() {
+        val preferences = Preferences(compose.activity.applicationContext)
+        val original = runBlocking { preferences.state.first() }
+        try {
+            runBlocking { preferences.save(original.copy(onboarded = true)) }
+            dashboard()
+            compose.onNodeWithTag("dashboard-ready").assertExists()
+            compose.onNodeWithText("Ajustes").performClick()
+            compose.onNodeWithText("Estoy en un entorno detenido").performClick()
+            compose.activityRule.scenario.recreate()
+            compose.waitUntil(10_000) { compose.onAllNodesWithTag("settings").fetchSemanticsNodes().isNotEmpty() }
+            compose.onAllNodesWithTag("dashboard-ready").assertCountEquals(0)
+            compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
+            dashboard()
+            compose.onNodeWithTag("dashboard-ready").assertExists()
+        } finally { runBlocking { preferences.save(original) } }
+    }
     @Test fun cyclesPreserveConfigurationAndRecover() {
         require(Build.FINGERPRINT.startsWith("generic") || Build.MODEL.contains("SDK")) { "EMULATOR_ONLY" }
         val preferences = Preferences(compose.activity.applicationContext)
