@@ -1,7 +1,7 @@
 # Limitaciones conocidas
 
-Base Sprint 7: Sprint 6 fusionado por PR #7, main `1328077`; CI Android/Python del
-merge aprobado. Sprint 7 permanece local sin CI remoto propio; ver `SPRINT7_REPORT.md`.
+Base Sprint 8: Sprint 7 fusionado por PR #8, main `328ffec`; CI Android/Python del
+merge aprobado. Sprint 8 permanece local sin CI remoto propio; ver `SPRINT8_REPORT.md`.
 
 | Área | Limitación e impacto | Próxima validación/cambio |
 |---|---|---|
@@ -18,8 +18,8 @@ merge aprobado. Sprint 7 permanece local sin CI remoto propio; ver `SPRINT7_REPO
 | Contactos | Consulta local y ACTION_DIAL; no llamada automática. Muestra hasta cinco números | Validar agenda física, nombres duplicados y accesibilidad |
 | POI | Google Places opcional y demo; sin consulta comercial/GPS físico validado | Clave restringida, ubicación y cuotas en proyecto de prueba |
 | Estado de conducción | UNKNOWN; confirmar entorno de prueba no certifica PARKED | Fuente fiable antes de funciones avanzadas |
-| UI | Editor de widgets disponible solo en laboratorio explícito y temporal; sin drag-and-drop, se usan botones | Hardware físico y escalas de fuente extremas pendientes; resoluciones reales ejecutadas en SPRINT6_REPORT.md |
-| Distribución | APK Sprint 7 debug firmado localmente; sin release ni CI remoto de Sprint 7 | CI tras autorización de push; firma de producción fuera del repositorio |
+| UI | Editor de widgets disponible solo en laboratorio explícito y temporal; sin drag-and-drop, se usan botones | Hardware físico y escalas de fuente extremas pendientes; resoluciones emuladas ejecutadas en SPRINT8_REPORT y TEST_RESULTS |
+| Distribución | APK Sprint 8 debug firmado localmente; sin release ni CI remoto de Sprint 8; debug incluye Activities de tooling/tests | CI tras autorización de push y revisión de variante de distribución; firma de producción fuera del repositorio |
 | Dependencias | Versiones estables fijadas, avisos de actualización de lint; no auditoría CVE exhaustiva | Auditoría y renovación controlada de la matriz |
 | Python heredado | Servidor local sin auth; LLM opcional envía métricas y texto según README original | Mantener en localhost; puente Android futuro requiere nuevo diseño de consentimiento |
 
@@ -69,3 +69,19 @@ La matriz física existente permanece PENDING donde ya lo estaba.
 ## Sprint 5 — límites adicionales y corrección de POI
 
 Sprint 5 sustituyó el puerto/fake de POI por Google Places SDK opcional y demo explícita. Este checkout no tiene clave, factura ni consulta comercial validada. Sin clave se mantiene `NOT_CONFIGURED` salvo demo. El centro manual no está disponible porque falta geocodificación autorizada y fiable. Nearby Search de ratings/reseñas puede ser facturable; cuota, condiciones EEE, atribuciones y políticas de privacidad requieren revisión de despliegue. Solo se ha probado la navegación simulada en emulador; Maps/Waze físicos y GPS siguen pendientes. No hay ETA ni ruta activa observada. La precisión depende del dispositivo y servicio de ubicación; se descartan fixes mayores de 30 s. El control «entorno detenido» es declaración del usuario, no detección verificada de movimiento.
+
+## Sprint 8 — rendimiento y estabilidad
+
+Solo emulador API35 disponible; API26/30, teléfono, ELM327/coche y servicios
+comerciales siguen pendientes. No se instalaron imágenes nuevas ni se alteró
+hardware físico. Macrobenchmark es opt-in, sin presupuesto obligatorio en CI;
+la variante benchmark deriva de release configurada sin minificación. No simula
+una distribución optimizada de producción ni permite extrapolar rendimiento OEM.
+La reducción de llamadas MediaSession y el IO fuera de Main no implican una mejora
+porcentual de arranque. Comparación numérica y cualquier regresión se registran en
+PERFORMANCE_COMPARISON. Sin conteo instrumentado de recomposiciones ni heap profiler:
+no se afirma eliminación de fugas. Un PSS creciente requiere investigación adicional.
+Los tiempos de operación del harness incluyen espera/scroll y son cotas externas.
+Debug contiene Activities de tooling/test-manifest; revisar variante de distribución
+antes de entregar a usuarios externos. Firmas de producción, release y CI remoto de
+Sprint8 pendientes; las verificaciones físicas requieren observación humana exacta.

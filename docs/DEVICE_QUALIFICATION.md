@@ -1,4 +1,12 @@
-# Calificación de dispositivos — Sprint 7
+# Calificación de dispositivos — Sprint 8
+
+Sprint 7 está fusionado por PR #8 (328ffec), CI Android/Tests success. Sprint 8 es
+local sin publicación. Se reutilizan los contratos de calificación y el runner
+pasivo; se añaden contratos PerformanceReadiness, benchmark_android y stability_android.
+Estos dos runners solo actúan sobre emuladores explícitos y APKs comprobados por hash.
+Ver BENCHMARK_RUNBOOK para comandos y PHYSICAL_TEST_PROCEDURES para los recorridos
+físicos pendientes. TTID/TTFD/cota UI, funcional/emulado/humano y servicio comercial
+son categorías distintas. Raw Perfetto/logs requieren revisión antes de compartir.
 
 Una calificación describe un escenario en un APK exacto. No homologa una familia
 de teléfonos ni autoriza uso en conducción. Contratos ejecutables:
@@ -25,13 +33,13 @@ El constructor rechaza PHYSICALLY_VERIFIED para emulador o método automatizado.
 Desde la raíz del repositorio, con JDK 17 y SDK 35 disponibles:
 
 ```powershell
-python scripts/qualify_android.py --out artifacts/sprint7/discovery.json
-python scripts/qualify_android.py --serial emulator-5554 --out artifacts/sprint7/environment.json
+python scripts/qualify_android.py --out artifacts/sprint8/discovery.json
+python scripts/qualify_android.py --serial emulator-5554 --out artifacts/sprint8/environment.json
 $apk = 'android/app/build/outputs/apk/debug/app-debug.apk'
 $apkHash = (Get-FileHash -LiteralPath $apk -Algorithm SHA256).Hash
-python scripts/qualify_android.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --install --launch --allow-install --allow-active --dry-run --out artifacts/sprint7/dry-run.json
+python scripts/qualify_android.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --install --launch --allow-install --allow-active --dry-run --out artifacts/sprint8/dry-run.json
 # Solo después de revisar el dry-run; este ejemplo actúa sobre el emulador.
-python scripts/qualify_android.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --install --launch --allow-install --allow-active --out artifacts/sprint7/install.json
+python scripts/qualify_android.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --install --launch --allow-install --allow-active --out artifacts/sprint8/install.json
 ```
 
 Completar onboarding desde la app antes de medir. Los tests conectados de Gradle
@@ -40,10 +48,10 @@ con `adb am instrument`. La instalación -r no borra datos ni permite downgrade;
 si una firma no coincide, detenerse sin desinstalar/borrar preferencias.
 
 ```powershell
-python scripts/qualify_android.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --matrix --allow-active --out artifacts/sprint7/screens.json
-python scripts/qualify_android.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --samples 20 --allow-active --out artifacts/sprint7/performance.json
-python scripts/sprint7_recovery_smoke.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --allow-active --dry-run --out artifacts/sprint7/recovery-dry-run.json
-python scripts/sprint7_recovery_smoke.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --allow-active --out artifacts/sprint7/recovery.json
+python scripts/qualify_android.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --matrix --allow-active --out artifacts/sprint8/screens.json
+python scripts/qualify_android.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --samples 20 --allow-active --out artifacts/sprint8/performance.json
+python scripts/sprint7_recovery_smoke.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --allow-active --dry-run --out artifacts/sprint8/recovery-dry-run.json
+python scripts/sprint7_recovery_smoke.py --serial emulator-5554 --apk $apk --expected-sha256 $apkHash --allow-active --out artifacts/sprint8/recovery.json
 ```
 
 El runner descubre adb por parámetro/PATH/SDK/local.properties/.tools; solo consulta

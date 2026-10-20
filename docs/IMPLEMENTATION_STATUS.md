@@ -1,4 +1,10 @@
-# Estado de implementación — Sprint 7 local; Sprints 1–6 fusionados
+# Estado de implementación — Sprint 8 local; Sprints 1–7 fusionados
+
+Sprint 7 fusionado por PR #8 en 328ffec con CI Android/Tests success. Sprint 8 añade
+contratos de rendimiento, disponibilidad renderizada, Macrobenchmark aislado y
+estabilidad restaurable; resultados exactos en SPRINT8_REPORT/TEST_RESULTS.
+Sin push/PR/merge/release de Sprint 8. Calificación física/comercial PENDING.
+Las secciones siguientes son evidencia histórica de cada sprint.
 
 ## Sprint 4 — rama `feat/sprint4-hardware-validation`
 

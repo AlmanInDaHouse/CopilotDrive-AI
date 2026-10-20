@@ -1,3 +1,23 @@
+# Cobertura ejecutada — Sprint 8
+
+Sprint 7/PR #8 fusionado en 328ffec, CI Android/Tests success. Sprint 8 local;
+evidencia actual en SPRINT8_REPORT y TEST_RESULTS. Matriz de dependencias histórica
+debajo; las versiones están fijadas, no se afirma que sean las últimas.
+
+| Android | Entorno disponible | Ejecución Sprint 8 |
+| --- | --- | --- |
+| API26 / Android8 | Sin imagen AVD instalada ni teléfono | PENDING; minSdk no acredita prueba |
+| API30 / Android11 | Sin imagen AVD instalada ni teléfono | PENDING; no descarga/cambio global de SDK |
+| API35 / Android15 | Android SDK built for x86_64, 1280×800/160dpi/font1 | Suites Compose/DataStore/Keystore/MediaSession de prueba, voz ausente, ciclo de vida; matriz exacta y benchmarks en informes Sprint8 |
+| Teléfono o pantalla física | No detectado | PENDING en cada integración |
+
+Macrobenchmark1.3.4 y UIAutomator2.3.0 en módulo opt-in; ProfileInstaller1.4.1 añadido
+solo a benchmark. Compilan con SDK35/AGP8.9.2/JDK17. Frame overrun requiere API31;
+API26/30 no producirán ese dato. La app benchmark usa paquete aislado y firma debug.
+Recorridos físicos y permisos por API: PHYSICAL_TEST_PROCEDURES.md.
+
+## Referencia histórica de dependencias
+
 # Compatibilidad verificada documentalmente â€” 2026-10-20
 Estas versiones son una base estable fijada, no una afirmaciÃ³n de ser las Ãºltimas.
 
