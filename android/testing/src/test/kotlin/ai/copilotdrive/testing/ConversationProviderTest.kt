@@ -11,6 +11,25 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ConversationProviderTest {
+    @Test fun suspendedCredentialLookupRechecksConsentBeforeTransport() = runTest {
+        val settings = FakeProviderSettings(ProviderConfiguration(true, "https://example.test/v1", "test", consented = true))
+        val transport = FakeHTTPTransport()
+        var reads = 0
+        val gate = kotlinx.coroutines.CompletableDeferred<Unit>()
+        val provider = OpenAICompatibleProvider(settings::current, {
+            reads++
+            if (reads == 2) gate.await()
+            "fixture"
+        }, transport)
+        var response: AIResponse? = null
+        val job = launch { response = provider.generate(AIRequest("test")) }
+        runCurrent()
+        settings.value = settings.value.copy(consented = false)
+        gate.complete(Unit)
+        job.join()
+        assertEquals(0, transport.calls)
+        assertEquals("CONFIG_CHANGED", (response as AIResponse.Unavailable).error.code)
+    }
     private val textJson = """{"choices":[{"finish_reason":"stop","message":{"content":"Una CVT cambia la relación de forma continua."}}]}"""
     private val toolJson = """{"choices":[{"finish_reason":"tool_calls","message":{"tool_calls":[{"type":"function","function":{"name":"vehicle.get_fuel","arguments":"{}"}}]}}]}"""
     private fun fixture(): Triple<OpenAICompatibleProvider, FakeProviderSettings, FakeHTTPTransport> {

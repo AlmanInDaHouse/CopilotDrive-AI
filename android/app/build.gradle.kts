@@ -15,6 +15,16 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
     buildFeatures { compose = true; buildConfig = true }
+    buildTypes {
+        create("benchmark") {
+            initWith(getByName("release"))
+            isDebuggable = false
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += listOf("release")
+            applicationIdSuffix = ".benchmark"
+            buildConfigField("String", "PLACES_ANDROID_API_KEY", "\"\"")
+        }
+    }
     val placesKey = providers.gradleProperty("PLACES_ANDROID_API_KEY").orElse(providers.environmentVariable("PLACES_ANDROID_API_KEY")).orElse("").get()
     defaultConfig { buildConfigField("String", "PLACES_ANDROID_API_KEY", "\"${placesKey.replace("\\", "\\\\").replace("\"", "\\\"")}\"") }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
@@ -28,6 +38,7 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    "benchmarkImplementation"("androidx.profileinstaller:profileinstaller:1.4.1")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
     implementation("androidx.datastore:datastore-preferences:1.1.4")

@@ -22,7 +22,7 @@ fun interface HTTPTransport {
 /** Wire format stays here; no untrusted JSON is deserialized into tool domain objects. */
 class OpenAICompatibleProvider(
     private val settings: () -> ProviderConfiguration,
-    private val credential: () -> String?,
+    private val credential: suspend () -> String?,
     private val transport: HTTPTransport,
     private val allowLocalHttp: Boolean = false,
 ) : AIProvider {
@@ -39,12 +39,12 @@ class OpenAICompatibleProvider(
         val timeout = config.timeoutMs.coerceIn(1_000, 30_000)
         val body = encodeRequest(config, request)
         if (body.toByteArray(Charsets.UTF_8).size > 16_384) return AIResponse.Invalid(AIError("REQUEST_TOO_LARGE", "La consulta supera el límite."))
-        if (settings() != config || credential().orEmpty() != token) return AIResponse.Unavailable(AIError("CONFIG_CHANGED", "La configuración cambió durante la consulta."))
+        if (credential().orEmpty() != token || settings() != config) return AIResponse.Unavailable(AIError("CONFIG_CHANGED", "La configuración cambió durante la consulta."))
         return try {
             val result = withTimeout(timeout.toLong() + 1_000) {
                 transport.post(config.endpoint.trimEnd('/') + "/chat/completions", token, body, timeout)
             }
-            if (settings() != config || credential().orEmpty() != token) return AIResponse.Unavailable(AIError("CONFIG_CHANGED", "La configuración cambió durante la consulta."))
+            if (credential().orEmpty() != token || settings() != config) return AIResponse.Unavailable(AIError("CONFIG_CHANGED", "La configuración cambió durante la consulta."))
             if (result.body.toByteArray(Charsets.UTF_8).size > 65_536) return AIResponse.Invalid(AIError("RESPONSE_TOO_LARGE", "Respuesta demasiado grande."))
             when (result.status) {
                 200 -> parseResponse(result.body, config.toolCalling && request.allowedTools.isNotEmpty())

@@ -6,3 +6,4 @@ dependencyResolutionManagement {
 rootProject.name = "CopilotDriveAI"
 include(":core", ":testing")
 if (!providers.gradleProperty("coreOnly").isPresent) include(":app")
+if (providers.gradleProperty("enableMacrobenchmark").isPresent && !providers.gradleProperty("coreOnly").isPresent) include(":macrobenchmark")

@@ -1,6 +1,7 @@
 package ai.copilotdrive.app
 
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.ReportDrawnWhen
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,12 +19,17 @@ import ai.copilotdrive.app.platform.VoicePreferences
 import ai.copilotdrive.app.ui.*
 import ai.copilotdrive.core.CapabilityStatus
 import ai.copilotdrive.core.PlaceCategory
+import ai.copilotdrive.core.dashboardReady
 
+@OptIn(androidx.compose.ui.ExperimentalComposeUiApi::class)
 @Composable
 fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: () -> Unit, onMediaPermission: () -> Unit,
     onBluetoothPermission: () -> Unit = {}, onPlaceSearch: (PlaceCategory) -> Unit = {}) {
     val state by model.state.collectAsStateWithLifecycle()
     val customization by model.customization.state.collectAsStateWithLifecycle()
+    val dashboardIsReady = dashboardReady(state.preferencesLoaded, state.preferences.onboarded,
+        customization.loaded, state.vehicle != null)
+    ReportDrawnWhen { dashboardIsReady }
     var settings by rememberSaveable { mutableStateOf(false) }
     var deviceLab by rememberSaveable { mutableStateOf(false) }
     var places by rememberSaveable { mutableStateOf(false) }
@@ -32,7 +38,8 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
     var laboratoryMode by remember { mutableStateOf(false) }
     LaunchedEffect(customization.laboratory) { if (!customization.laboratory) laboratoryMode = false }
     CopilotTheme {
-        Surface(Modifier.fillMaxSize().safeDrawingPadding(), color = MaterialTheme.colorScheme.background) {
+        Surface(Modifier.fillMaxSize().safeDrawingPadding().semantics { testTagsAsResourceId = true }
+            .testTag(if (dashboardIsReady) "dashboard-ready" else "startup-loading"), color = MaterialTheme.colorScheme.background) {
             when {
                 !state.preferencesLoaded -> Box(Modifier.padding(32.dp)) { Text("Preparando CopilotDrive…") }
                 !state.preferences.onboarded -> Onboarding { model.savePreferences(state.preferences.copy(onboarded = true)) }

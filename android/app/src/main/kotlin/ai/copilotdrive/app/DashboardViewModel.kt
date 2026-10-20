@@ -12,6 +12,10 @@ import ai.copilotdrive.core.*
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -57,6 +61,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     val customization = DashboardCustomization(layoutRepository,
         Clock { SystemClock.elapsedRealtime() }, viewModelScope)
     private val secrets = KeystoreSecretStore(app)
+    private val secretAccess = Mutex()
+    private val clockFormat = DateTimeFormatter.ofPattern("HH:mm")
     private val clock = ai.copilotdrive.core.SystemClock
     private val bluetooth = AndroidBluetoothObd(app)
     private val diagnosticHistory = DiagnosticHistory()
@@ -141,7 +147,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val capabilities = CapabilityRegistry(permissionProvider)
     private val tools = ToolRegistry(PolicyEngine(capabilities), vehicle, media, navigation, contacts, places)
     private val aiProvider = OpenAICompatibleProvider(
-        { mutable.value.preferences.ai }, { secrets.get() }, AndroidHTTPTransport(),
+        { mutable.value.preferences.ai }, { secretAccess.withLock { withContext(Dispatchers.IO) { secrets.get() } } }, AndroidHTTPTransport(),
         allowLocalHttp = (app.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0,
     )
     private val assistant = AssistantOrchestrator(tools, clock, aiProvider)
@@ -167,7 +173,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             val started = SystemClock.elapsedRealtime()
             tts.initialize()
             recordVoiceMetric(VoiceMetric.TTS_INIT, (SystemClock.elapsedRealtime() - started).coerceAtLeast(0))
-            mutable.update { it.copy(voices = tts.voices.value, ttsStatus = tts.status.value, credentialSaved = secrets.get() != null) }
+            val credentialSaved = secretAccess.withLock { withContext(Dispatchers.IO) { secrets.get() != null } }
+            mutable.update { it.copy(voices = tts.voices.value, ttsStatus = tts.status.value, credentialSaved = credentialSaved) }
             refreshCapabilities()
         }
         viewModelScope.launch { voice.state.collect { session -> mutable.update { it.copy(voice = session) }; refreshMedia() } }
@@ -210,12 +217,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         ticker = viewModelScope.launch {
             while (true) {
                 if (stationaryPlaces && !stationaryValid()) setPlacesStationary(false)
-                androidMedia.refresh()
+                if (!demoMedia) androidMedia.refresh()
                 refreshMedia(); refreshCapabilities()
                 val snapshot = vehicle.snapshot()
                 customization.motion(layoutMotion(snapshot, clock.now()))
                 customization.tick()
-                mutable.update { it.copy(vehicle = snapshot, clock = LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm"))) }
+                mutable.update { it.copy(vehicle = snapshot, clock = LocalTime.now().format(clockFormat)) }
                 delay(1_000)
             }
         }
@@ -305,14 +312,20 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
     fun saveCredential(value: String) {
-        try {
-            secrets.put(value)
+        cancel()
+        viewModelScope.launch { secretAccess.withLock { try {
+            withContext(Dispatchers.IO) { secrets.put(value) }
             mutable.update { it.copy(credentialSaved = true, notice = "Credencial guardada en este dispositivo.") }
-        } catch (_: Exception) { mutable.update { it.copy(notice = "No se pudo guardar la credencial.") } }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (_: Exception) { mutable.update { it.copy(notice = "No se pudo guardar la credencial.") } } } }
     }
     fun clearCredential() {
-        cancel(); secrets.clear()
-        mutable.update { it.copy(credentialSaved = false, notice = "Credencial eliminada.") }
+        cancel()
+        viewModelScope.launch { secretAccess.withLock { try {
+            withContext(Dispatchers.IO) { secrets.clear() }
+            mutable.update { it.copy(credentialSaved = false, notice = "Credencial eliminada.") }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (_: Exception) { mutable.update { it.copy(notice = "No se pudo eliminar la credencial.") } } } }
     }
     fun clearConversation() { assistant.clearAllConversations(); mutable.update { it.copy(notice = "Conversación borrada.") } }
     fun setDemoPlaces(enabled: Boolean) {
@@ -400,7 +413,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             mutable.update { it.copy(notice = "No hay instalador de voces en este dispositivo.") }
         }
     }
-    fun setDemoMedia(enabled: Boolean) { demoMedia = enabled; androidMedia.refresh(); refreshMedia(); refreshCapabilities() }
+    fun setDemoMedia(enabled: Boolean) { demoMedia = enabled; if (enabled) androidMedia.close() else androidMedia.refresh(); refreshMedia(); refreshCapabilities() }
     fun mediaControl(control: MediaControl) {
         viewModelScope.launch {
             val result = tools.execute(ToolRequest("media.${control.name.lowercase()}"))
