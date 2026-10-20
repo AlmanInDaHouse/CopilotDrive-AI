@@ -6,7 +6,6 @@ Physical installation and activity still require the user's explicit authorizati
 import argparse
 import hashlib
 import json
-import os
 from pathlib import Path
 import re
 import tempfile
@@ -23,6 +22,11 @@ def inspect_apk(adb, path):
     build = next(b for b in sorted((sdk/'build-tools').glob('*'), reverse=True) if (b/'aapt.exe').is_file())
     manifest_permissions = command([build/'aapt.exe', 'dump', 'permissions', path])
     permissions = sorted(set(re.findall(r"uses-permission(?:-sdk-\d+)?: name='([^']+)'", manifest_permissions)))
+    expected = {f'android.permission.{name}' for name in ('RECORD_AUDIO', 'READ_CONTACTS', 'INTERNET',
+        'ACCESS_COARSE_LOCATION', 'BLUETOOTH', 'BLUETOOTH_CONNECT', 'ACCESS_NETWORK_STATE', 'ACCESS_WIFI_STATE')}
+    expected.add(PACKAGE+'.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION')
+    if set(permissions) != expected:
+        raise QualificationError('APK_PERMISSION_ALLOWLIST_MISMATCH')
     metadata.update(packageId=PACKAGE, sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
         bytes=path.stat().st_size, permissions=permissions)
     return metadata

@@ -107,8 +107,8 @@ def disconnected(device, report, persist, action=svc):
         for transport in ('wifi', 'data'):
             report['restoreCommands'].append(action(device, transport, original['flags'][transport]))
         persist()
-        report['final'] = await_state(device, lambda s: s['flags'] == original['flags'] and s['activeDefault'] == original['activeDefault'])
-        restored = report['final']['flags'] == original['flags'] and report['final']['activeDefault'] == original['activeDefault']
+        report['final'] = await_state(device, lambda s: s == original)
+        restored = report['final'] == original
         report['restoration'] = 'RESTORED' if restored and all(r['exitCode'] == 0 for r in report['restoreCommands']) else 'FAILED'
         persist()
         if report['restoration'] != 'RESTORED':

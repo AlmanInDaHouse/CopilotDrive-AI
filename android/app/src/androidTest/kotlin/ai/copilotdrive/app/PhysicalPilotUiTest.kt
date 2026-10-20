@@ -12,6 +12,15 @@ import org.junit.Test
 /** Synthetic state only: never starts a microphone or audio service and cannot qualify acoustics. */
 class PhysicalPilotUiTest {
     @get:Rule val compose = createComposeRule()
+    @Test fun packagedManifestKeepsCoarseAndExcludesTransitivePreciseLocation() {
+        val context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext
+        @Suppress("DEPRECATION")
+        val permissions = context.packageManager.getPackageInfo(context.packageName,
+            android.content.pm.PackageManager.GET_PERMISSIONS).requestedPermissions.orEmpty().toSet()
+        assertTrue(android.Manifest.permission.ACCESS_COARSE_LOCATION in permissions)
+        assertFalse(android.Manifest.permission.ACCESS_FINE_LOCATION in permissions)
+        assertFalse(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION in permissions)
+    }
     @Test fun callbackLeavesHumanPendingAndExplicitNegativeConfirmationIsIndependent() {
         var state by mutableStateOf(AcousticProbeState(1, AcousticProbeStatus.COMPLETED))
         compose.setContent { CopilotTheme {
