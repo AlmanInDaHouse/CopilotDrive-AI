@@ -1,5 +1,10 @@
 # Limitaciones conocidas
 
+La PR #1 está fusionada (`42a3c90`). Su CI Android falló antes de Gradle porque
+`setup-android@v3` solicitó el paquete obsoleto `tools`. La rama local
+`fix/android-ci` usa `@v4` y pasa la validación local; la solución y el artefacto
+APK requieren confirmación en un nuevo run remoto después del push.
+
 | Área | Limitación e impacto | Próxima validación/cambio |
 |---|---|---|
 | Hardware | Sin vehículo ni pantalla aftermarket física; no homologación ni uso en marcha | Matriz de dispositivos en laboratorio |
@@ -14,7 +19,7 @@
 | POI | Puerto/fake de pruebas; herramienta real siempre NOT_CONFIGURED | Proveedor autorizado, ubicación y cuotas |
 | Estado de conducción | UNKNOWN; confirmar entorno de prueba no certifica PARKED | Fuente fiable antes de funciones avanzadas |
 | UI | Dashboard adaptable, sin editor de widgets; selección de voces puede ser larga | 800×480 y 360×640 revisados con scroll; falta tamaño de fuente máximo y hardware físico |
-| Distribución | APK debug con clave del entorno; sin release ni push | Firma de producción fuera del repositorio tras aceptación |
+| Distribución | APK debug con clave del entorno; PR #1 fusionada, corrección CI aún local y sin release | Verificar artefacto debug en CI; firma de producción fuera del repositorio tras aceptación |
 | Dependencias | Versiones estables fijadas, avisos de actualización de lint; no auditoría CVE exhaustiva | Auditoría y renovación controlada de la matriz |
 | Python heredado | Servidor local sin auth; LLM opcional envía métricas y texto según README original | Mantener en localhost; puente Android futuro requiere nuevo diseño de consentimiento |
 

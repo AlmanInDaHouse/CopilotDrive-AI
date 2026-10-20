@@ -1,5 +1,16 @@
 # Estado de implementación — Android MVP 0.2
 
+## Estado posterior a la PR #1
+
+La PR #1 está fusionada en `main` (`42a3c90`; último commit del MVP `6e4cf95`).
+CI Python aprobó; CI Android falló en `setup-android@v3` por el paquete retirado `tools`,
+antes de llegar a Gradle. La rama local `fix/android-ci` usa `setup-android@v4` y pasó
+pruebas, lint y build locales. Falta una ejecución remota tras subir la rama.
+
+La app ya no depende de `:testing`: `DemoMediaAdapter` vive en `:core` como simulador
+de producto, y `FakeMediaAdapter` permanece en `:testing` para el harness determinista.
+El modo de demostración sigue disponible y explícitamente etiquetado.
+
 ## Implementado
 - Tres módulos: core JVM, testing JVM y app Android. Gradle Wrapper con checksum, minSdk26, target35.
 - Contratos tipados, JSON v1, fixtures compartidos Python/Kotlin, parser de cuatro PIDs read-only.
@@ -14,7 +25,7 @@
   selección determinista/manual y revocación. Resultado REQUESTED hasta callback del reproductor.
 - Intents Maps/Waze con validación/codificación y fallback entre ambos; sin ETA ni distancia inventada.
 - ContactProvider local con permiso explícito, desambiguación y confirmación caducable antes de ACTION_DIAL.
-- CI Android adicional; workflow Python preservado. APK debug generado localmente; sin publicación.
+- CI Android definido; workflow Python preservado. APK debug generado localmente; publicación como artefacto pendiente de CI remoto corregido.
 
 ## Simulado de forma explícita
 - Telemetría Android completa: 42 % de combustible, 0 km/h, 88 °C, 850 rpm, 13.9 V, autonomía desconocida.
@@ -28,7 +39,7 @@
 - POI real y ubicación, wake word, editor de widgets, Spotify SDK específico: pendientes.
 - No hay puente Android-Python activado; contrato v1 está preparado y probado con fixtures.
 - Cualificación en pantallas físicas, ruido, voz acústica, latencia y consumo: pendientes.
-- Firma de producción, releases, distribución pública y push: no realizados.
+- Firma de producción, releases y distribución pública: no realizados. La PR #1 sí fue publicada y fusionada; la rama de corrección sigue local.
 
 ## Criterios MVP (specs)
 Código y tests locales cubren shell, core/harness y flujo vertical; multimedia, navegación y contactos tienen

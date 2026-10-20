@@ -1,6 +1,30 @@
 # Resultados ejecutados — 2026-10-20
 
-Código Android validado: commit d849c3e (rama feat/android-mvp). No resultados de CI remota: no se ha hecho push.
+## Corrección posterior a la PR #1 (`fix/android-ci`)
+
+La PR #1 se fusionó en `main` como `42a3c90` (MVP `6e4cf95`). En esa revisión,
+CI Python terminó en SUCCESS y CI Android falló antes de Gradle, en
+`android-actions/setup-android@v3`: `Warning: Failed to find package 'tools'`.
+La rama local cambia a `@v4`, que ya no solicita ese paquete retirado. **El CI corregido
+no está verificado remotamente**: la rama aún no se ha subido y no existe una nueva ejecución.
+
+Validación local de esta corrección, Windows/JDK 17/SDK 35:
+
+- `python -m unittest discover -s tests -v`: **12/12**.
+- `python scripts/check_repository.py`: aprobado; incluye el límite app → testing.
+- `:core:test :testing:test :app:testDebugUnitTest`: **34/34** (dos pruebas nuevas de `DemoMediaAdapter`).
+- `:app:lintDebug`: **0 errores, 8 avisos** sobre versiones de dependencias.
+- `:app:assembleDebug :app:assembleDebugAndroidTest`: BUILD SUCCESSFUL; APKs generados.
+- `:app:connectedDebugAndroidTest`: **8/8**, emulador Android 15/API 35 x86_64.
+- `git diff --check`: sin errores.
+
+Total de esta ejecución local: **54 pruebas aprobadas**. El workflow conserva el job manual
+`device-tests` para repetir la instrumentación en GitHub Actions. La publicación del APK
+como artefacto solo quedará acreditada cuando termine correctamente una ejecución remota.
+
+## Evidencia histórica del MVP antes de la fusión
+
+Código Android validado entonces: commit d849c3e (rama feat/android-mvp). Esta sección conserva la evidencia local anterior a la PR #1.
 Entorno: Windows, Python 3.13.14, Microsoft JDK 17.0.20.1+1, Gradle 8.11.1, AGP 8.9.2,
 Kotlin 2.2.0, SDK 35. Emulador AOSP Android 15 API35 x86_64, aceleración WHPX, 1280×800 / 160 dpi.
 
