@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://copilotdrive.ai/schemas/vehicle-snapshot-v1.json",
+  "title": "VehicleSnapshot v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "source",
+    "connectionStatus",
+    "simulationMode",
+    "capturedAt",
+    "supportedCapabilities",
+    "speedKmh",
+    "engineRpm",
+    "fuelLevelPercent",
+    "coolantTemperatureC",
+    "batteryVoltage",
+    "vehicleRangeKm"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "source": {
+      "type": "string",
+      "minLength": 1
+    },
+    "connectionStatus": {
+      "enum": [
+        "CONNECTED",
+        "DISCONNECTED"
+      ]
+    },
+    "simulationMode": {
+      "type": "boolean"
+    },
+    "capturedAt": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "supportedCapabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string"
+      }
+    },
+    "speedKmh": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/metric"
+        },
+        {
+          "properties": {
+            "unit": {
+              "const": "km/h"
+            }
+          }
+        }
+      ]
+    },
+    "engineRpm": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/metric"
+        },
+        {
+          "properties": {
+            "unit": {
+              "const": "rpm"
+            }
+          }
+        }
+      ]
+    },
+    "fuelLevelPercent": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/metric"
+        },
+        {
+          "properties": {
+            "unit": {
+              "const": "%"
+            }
+          }
+        }
+      ]
+    },
+    "coolantTemperatureC": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/metric"
+        },
+        {
+          "properties": {
+            "unit": {
+              "const": "\u00b0C"
+            }
+          }
+        }
+      ]
+    },
+    "batteryVoltage": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/metric"
+        },
+        {
+          "properties": {
+            "unit": {
+              "const": "V"
+            }
+          }
+        }
+      ]
+    },
+    "vehicleRangeKm": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/metric"
+        },
+        {
+          "properties": {
+            "unit": {
+              "const": "km"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "value",
+        "unit",
+        "source",
+        "capturedAt",
+        "availability",
+        "quality"
+      ],
+      "properties": {
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "minLength": 1
+        },
+        "capturedAt": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "availability": {
+          "enum": [
+            "AVAILABLE",
+            "UNAVAILABLE",
+            "STALE",
+            "DISCONNECTED",
+            "SIMULATED"
+          ]
+        },
+        "quality": {
+          "enum": [
+            "UNKNOWN",
+            "SENSOR_REPORTED",
+            "FIXTURE"
+          ]
+        }
+      }
+    }
+  }
+}

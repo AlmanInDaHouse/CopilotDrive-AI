@@ -61,6 +61,9 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(413, {"error": "Input size invalid"})
                 return
             request_data = json.loads(self.rfile.read(length))
+            if not isinstance(request_data, dict):
+                self._json(400, {"error": "Expected JSON object"})
+                return
             msg = request_data.get("text", "")
             if not isinstance(msg, str) or len(msg) > 400:
                 self._json(400, {"error": "Invalid text"})

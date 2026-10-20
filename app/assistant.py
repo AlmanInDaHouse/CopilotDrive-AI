@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import unicodedata
@@ -16,9 +17,10 @@ def normalize(text: str) -> str:
 
 def value(snapshot: dict, key: str, unit: str) -> str:
     datum = snapshot.get(key)
-    if not isinstance(datum, (int, float)):
+    if snapshot.get("status") != "connected" or isinstance(datum, bool) or not isinstance(datum, (int, float)) or not math.isfinite(datum):
         return "no disponible"
-    return f"{datum:g} {unit}".strip()
+    suffix = " (dato simulado)" if snapshot.get("source") == "simulator" else ""
+    return f"{datum:g} {unit}".strip() + suffix
 
 
 def model_answer(prompt: str, snapshot: dict) -> str | None:

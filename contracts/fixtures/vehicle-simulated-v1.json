@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "source": "simulator",
+  "connectionStatus": "CONNECTED",
+  "simulationMode": true,
+  "capturedAt": 1700000000000,
+  "supportedCapabilities": [
+    "vehicle.fuel",
+    "vehicle.temperature",
+    "vehicle.snapshot"
+  ],
+  "speedKmh": {
+    "value": 0,
+    "unit": "km/h",
+    "source": "simulator",
+    "capturedAt": 1700000000000,
+    "availability": "SIMULATED",
+    "quality": "FIXTURE"
+  },
+  "engineRpm": {
+    "value": 850,
+    "unit": "rpm",
+    "source": "simulator",
+    "capturedAt": 1700000000000,
+    "availability": "SIMULATED",
+    "quality": "FIXTURE"
+  },
+  "fuelLevelPercent": {
+    "value": 42,
+    "unit": "%",
+    "source": "simulator",
+    "capturedAt": 1700000000000,
+    "availability": "SIMULATED",
+    "quality": "FIXTURE"
+  },
+  "coolantTemperatureC": {
+    "value": 88,
+    "unit": "°C",
+    "source": "simulator",
+    "capturedAt": 1700000000000,
+    "availability": "SIMULATED",
+    "quality": "FIXTURE"
+  },
+  "batteryVoltage": {
+    "value": 13.9,
+    "unit": "V",
+    "source": "simulator",
+    "capturedAt": 1700000000000,
+    "availability": "SIMULATED",
+    "quality": "FIXTURE"
+  },
+  "vehicleRangeKm": {
+    "value": null,
+    "unit": "km",
+    "source": "simulator",
+    "capturedAt": 1700000000000,
+    "availability": "UNAVAILABLE",
+    "quality": "FIXTURE"
+  }
+}

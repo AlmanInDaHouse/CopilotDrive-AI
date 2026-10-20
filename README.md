@@ -1,4 +1,57 @@
-# 🚘 OpenCar Copilot (MVP 0.1)
+# CopilotDrive-AI · Android MVP
+
+App Android convencional para dispositivos abiertos, con dashboard Compose, simulador explícito,
+push-to-talk, TTS local, sesiones multimedia autorizadas, navegación externa y contactos con confirmación.
+El prototipo Python/web se conserva y funciona por separado.
+
+**Versión experimental para laboratorio detenido.** No controla el vehículo. No es Android Auto, AAOS ni CarPlay.
+El movimiento del vehículo se considera desconocido; la velocidad del simulador no permite deducirlo.
+
+### Probar Android
+
+1. Instala el APK debug generado en `android/app/build/outputs/apk/debug/app-debug.apk`.
+   En esta sesión también se entrega una copia en `artifacts/CopilotDrive-AI-debug.apk` (no versionada).
+2. Abre **CopilotDrive AI** y completa el aviso inicial.
+3. Pulsa **Probar consulta**: se consulta combustible simulado (42 %) y se intenta TTS con una voz local instalada.
+4. Para voz real: **Ajustes → voz**. Si no hay reconocimiento local, autoriza expresamente el motor del sistema;
+   puede enviar audio a su proveedor. Regresa y pulsa **Pulsar para hablar**, concede micrófono y di
+   «Jarvis, cuánta gasolina queda». Sin motor STT o voz TTS instalada aparece el estado correspondiente.
+5. Audio real: desactiva audio de demostración, autoriza sesiones multimedia y abre un reproductor compatible.
+   Para contactos, activa su permiso en Ajustes; «llama a Mercedes» pide elegir si hay varias coincidencias y
+   confirmar antes de abrir el marcador. Maps/Waze se abren con «llévame a Gran Vía, Madrid» o «Waze Madrid».
+
+El audio de demostración cambia metadatos/controles pero no reproduce sonido. El LLM es opcional:
+esta entrega Android usa el resolver local; el proveedor remoto aún no está implementado.
+Bluetooth OBD, POI real, wake word y firma de producción están pendientes.
+
+### Compilar y comprobar
+
+JDK 17 y Android SDK platform 35 / build-tools 35.0.0. Gradle Wrapper incluido y verificado con SHA-256.
+
+```powershell
+# Desde la raíz del repositorio en Windows; usa el JDK local .tools si está presente.
+.\scripts\android.ps1
+python -m unittest discover -s tests -v
+python scripts/check_repository.py
+```
+
+```bash
+cd android
+./gradlew :core:test :testing:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug
+# Con dispositivo/emulador conectado:
+./gradlew :app:connectedDebugAndroidTest
+# Solo núcleo JVM, sin SDK:
+./gradlew -PcoreOnly :core:test :testing:test
+```
+
+El usuario que instala el APK no necesita estas herramientas. Sin API keys para compilación ni tests.
+[Instalación detallada](docs/INSTALL_ANDROID.md) · [Resultados reales](docs/TEST_RESULTS.md) ·
+[Estado](docs/IMPLEMENTATION_STATUS.md) · [Limitaciones](docs/KNOWN_LIMITATIONS.md) ·
+[Arquitectura](docs/ARCHITECTURE_V1.md) · [Próximos pasos](docs/NEXT_STEPS.md).
+
+---
+
+## Prototipo Python/web conservado (MVP 0.1)
 
 **Asistente experimental open-source para pantallas de infoentretenimiento, PC y Raspberry Pi.**
 
@@ -17,7 +70,7 @@
 - Respuestas de IA opcionales con un endpoint **OpenAI-compatible** (OpenAI, Ollama, proxy compatible, etc.). Sin API ni claves, el router de comandos funciona igualmente.
 - Reglas informativas de umbral configurables; no sustituye diagnóstico.
 
-**NO es una app Android Auto / Android Automotive nativa ni un APK; esa es una etapa posterior.** Tampoco funciona en todas las pantallas OEM. El acceso a micrófono en otros dispositivos requiere contexto seguro HTTPS; en localhost depende del navegador.
+**Esta sección describe el prototipo web, no el APK Android descrito arriba. Ninguna versión implementa Android Auto ni Android Automotive.** Tampoco funciona en todas las pantallas OEM. El acceso a micrófono en otros dispositivos requiere contexto seguro HTTPS; en localhost depende del navegador.
 
 ## Instalación rápida: modo simulador
 

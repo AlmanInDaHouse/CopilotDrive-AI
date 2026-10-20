@@ -1,0 +1,28 @@
+# Arquitectura V1
+Tres módulos Gradle con implementación real: core JVM, testing JVM, app Android. Inyección manual,
+MVVM, StateFlow, coroutines. Fakes antes de adaptadores. Sin Room ni servicios adicionales.
+
+```mermaid
+flowchart TD
+ UI[Compose dashboard / onboarding / settings] --> VM[DashboardViewModel]
+ VM --> Voice[VoiceSessionCoordinator]
+ Voice --> Orchestrator[AssistantOrchestrator]
+ Orchestrator --> Registry[ToolRegistry + PolicyEngine]
+ Registry --> Context[VehicleContextEngine]
+ Registry --> Ports[Media / navigation / contacts / places ports]
+ Context --> Sim[SimulatorVehicleProvider]
+ Ports --> Android[Android platform adapters]
+ Voice --> Speech[SpeechRecognizer + TextToSpeech + audio focus]
+ VM --> Prefs[DataStore voice / consent preferences]
+ Tests[Deterministic harness] --> Orchestrator
+ Python[Existing Python / web prototype] -. optional future versioned bridge .-> Context
+```
+
+Les données externas son datos, nunca políticas. ToolRegistry valida argumentos cerrados y capacidades;
+PolicyEngine no acepta autorizaciones del proveedor. Confirmación del marcador ligada al número pendiente,
+con caducidad y cancelación. Se informa apertura del intent, no llamada/ruta completada.
+
+TTL de métricas: 10 s, reloj inyectado, rechazar timestamps futuros. Simulación conserva etiqueta incluso
+si su dato caduca. No calcular autonomía desde porcentaje. JSON v1 preparado, sin puente de red habilitado.
+STT local si Android lo ofrece; fallback del motor del sistema requiere consentimiento explícito por posible
+uso de red. Solo voces TTS locales instaladas. Reconocimiento de una sesión, sin wake word permanente.
