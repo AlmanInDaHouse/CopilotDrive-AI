@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.Until
+import androidx.test.uiautomator.StaleObjectException
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -64,17 +65,26 @@ class DashboardBenchmark {
         compilationMode = compilation, setupBlock = { prepare(); startActivityAndWait(); waitDashboard() },
         measureBlock = action,
     )
+    private fun MacrobenchmarkScope.scrollHeaderTopOrMissing(): Int? {
+        repeat(3) {
+            try { return device.findObject(By.res("edit-dashboard"))?.visibleBounds?.top }
+            catch (_: StaleObjectException) { device.waitForIdle() }
+        }
+        error("HEADER_OBSERVATION_UNSTABLE") // Never interpret repeated stale reads as movement.
+    }
     @Test fun dashboardScroll() = journey {
         val dashboard = device.findObject(By.res("dashboard"))
         check(dashboard.isScrollable) { "DASHBOARD_NOT_SCROLLABLE" }
         val bounds = dashboard.visibleBounds
         dashboard.setGestureMargin(minOf(bounds.width(), bounds.height()) / 10)
-        val headerBefore = checkNotNull(device.findObject(By.res("edit-dashboard"))).visibleBounds.top
+        val headerBefore = checkNotNull(scrollHeaderTopOrMissing()) { "HEADER_MISSING_BEFORE_SCROLL" }
         dashboard.swipe(Direction.UP, .8f, 800)
         device.waitForIdle()
-        val headerAfter = device.findObject(By.res("edit-dashboard"))?.visibleBounds?.top
+        val headerAfter = scrollHeaderTopOrMissing()
         check(headerAfter == null || headerAfter < headerBefore) { "SCROLL_DID_NOT_MOVE" }
-        dashboard.swipe(Direction.DOWN, .8f, 800)
+        val returnDashboard = checkNotNull(device.findObject(By.res("dashboard")))
+        returnDashboard.setGestureMargin(minOf(bounds.width(), bounds.height()) / 10)
+        returnDashboard.swipe(Direction.DOWN, .8f, 800)
         device.waitForIdle()
     }
     @Test fun settingsAndLab() = journey {
