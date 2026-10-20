@@ -141,10 +141,14 @@ def summary(values):
 
 def ui_nodes(device):
     # Stream only; no screenshots or provider/conversation text retained in evidence.
-    output = device.shell('uiautomator', 'dump', '/data/local/tmp/copilot-qualification.xml')
-    if 'dumped' not in output.lower():
-        raise QualificationError('UI_DUMP_FAILED')
-    return list(ET.fromstring(device.shell('cat', '/data/local/tmp/copilot-qualification.xml')).iter('node'))
+    temporary = '/data/local/tmp/copilot-qualification.xml'
+    try:
+        output = device.shell('uiautomator', 'dump', temporary)
+        if 'dumped' not in output.lower():
+            raise QualificationError('UI_DUMP_FAILED')
+        return list(ET.fromstring(device.shell('cat', temporary)).iter('node'))
+    finally:
+        device.shell('rm', '-f', temporary)
 
 
 def essential_bounds(nodes, width, height):

@@ -294,8 +294,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             description = "Etapa de voz $stage: $code. La respuesta escrita permanece disponible.",
             correctiveAction = if (code == "CANCELLED") null else "Revisa permisos, servicio y voz instalada; reintenta manualmente."))
     }
-    fun listen() { if (mutable.value.preferences.onboarded) voice.listen() }
-    fun demo(text: String) { if (mutable.value.preferences.onboarded) voice.demo(text) }
+    fun listen() { if (mutable.value.preferences.onboarded) { voiceProbe?.cancel(); voiceProbe = null; voice.listen() } }
+    fun demo(text: String) { if (mutable.value.preferences.onboarded) { voiceProbe?.cancel(); voiceProbe = null; voice.demo(text) } }
     private var voiceProbe: Job? = null
     fun cancel() { voiceProbe?.cancel(); voiceProbe = null; voice.cancel() }
     fun savePreferences(value: VoicePreferences) {
