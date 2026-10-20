@@ -17,3 +17,7 @@ Sprint 4 instala infraestructura de diagnóstico, harness y matriz de validació
 ## Sprint 5
 
 Lugares cercanos: contratos tipados, ubicación aproximada solicitada al buscar, consentimiento Google Places independiente de IA, proveedor oficial opcional, demostración determinista, selección temporal y handoff a Maps/Waze. La validación física de OBD, voz, GPS y aplicaciones de navegación sigue como trabajo independiente. Ver `SPRINT5_REPORT.md`.
+
+## Sprint 6
+
+Dashboard modular implementado: ocho widgets nativos, registro cerrado, cuadrícula lógica, presets Classic/Driver/Media/Laboratory, editor seguro en laboratorio, DataStore versionado, recuperación y pruebas. Evidencia y límites en `SPRINT6_REPORT.md`. Sprint 7 recomendado: completar matriz física de pantallas/voz/OBD/MediaSession/GPS/Maps/Waze y resolver incompatibilidades observadas; sin habilitar edición en conducción.
