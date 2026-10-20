@@ -82,6 +82,8 @@ class Elm327Serial:
         a = int(m.group(1), 16)
         b = int(m.group(2), 16) if m.group(2) is not None else 0
         if pid == "010C":
+            if m.group(2) is None:
+                return None
             return round((256 * a + b) / 4, 1)
         if pid == "010D":
             return float(a)
