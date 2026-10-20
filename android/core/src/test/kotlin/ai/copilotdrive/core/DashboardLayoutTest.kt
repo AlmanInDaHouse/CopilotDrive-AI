@@ -4,6 +4,9 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
 import org.junit.Assert.*
 import org.junit.Test
 import java.io.IOException
@@ -36,7 +39,7 @@ class DashboardLayoutTest {
     }
     @Test fun corruptUnknownFutureAndMissingVersionRecover() {
         val raw = LayoutCodec.encode(classic)
-        listOf("{", "", raw.replace("VEHICLE", "REMOTE_APP"), raw.replace("\"schemaVersion\":1", "\"schemaVersion\":99"),
+        listOf("{", "", raw.replace("VEHICLE", "REMOTE_APP"), raw.replace("EXPANDED", "HUGE"), raw.replace("\"schemaVersion\":1", "\"schemaVersion\":99"),
             raw.replace("\"schemaVersion\":1,", "")).forEach {
             val loaded = LayoutCodec.decode(it)
             assertNotNull(loaded.notice); assertEquals(classic, loaded.layout)
@@ -134,5 +137,37 @@ class DashboardLayoutTest {
         controller.load(repository.state.value); controller.confirmLaboratory(true); controller.begin()
         try { controller.save(); fail("cancellation swallowed") } catch (_: CancellationException) { }
         assertEquals(0, repository.writes); assertFalse(controller.state.value.saving)
+    }
+    @Test fun simultaneousSaveAndTelemetryCannotDuplicateWriteOrChangeDraft() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        var writes = 0
+        val repository = object : LayoutRepository {
+            override val state = MutableStateFlow(LayoutLoadResult(classic))
+            override suspend fun save(layout: DashboardLayout) { writes++; gate.await(); state.value = LayoutLoadResult(layout) }
+        }
+        val controller = DashboardCustomization(repository, Clock { 0 }, backgroundScope)
+        controller.load(repository.state.value); controller.confirmLaboratory(true); controller.begin()
+        controller.change { preset(DashboardPreset.MEDIA) }
+        val first = launch { controller.save() }; runCurrent()
+        controller.motion(MotionState.UNKNOWN)
+        controller.change { restore() }
+        controller.save()
+        assertEquals(1, writes)
+        gate.complete(Unit); first.join()
+        assertEquals(DashboardPreset.MEDIA, controller.state.value.layout.preset)
+    }
+    @Test fun backgroundCancelsAnInFlightWriteAndNeverResurrectsEditor() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        var committed = false
+        val repository = object : LayoutRepository {
+            override val state = MutableStateFlow(LayoutLoadResult(classic))
+            override suspend fun save(layout: DashboardLayout) { gate.await(); committed = true }
+        }
+        val controller = DashboardCustomization(repository, Clock { 0 }, backgroundScope)
+        controller.load(repository.state.value); controller.confirmLaboratory(true); controller.begin()
+        val saving = launch { controller.save() }; runCurrent()
+        controller.background(); gate.complete(Unit); saving.join()
+        assertTrue(saving.isCancelled); assertFalse(committed)
+        assertNull(controller.state.value.edit); assertFalse(controller.state.value.saving)
     }
 }
