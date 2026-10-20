@@ -33,9 +33,18 @@ def inspect_apk(adb, path):
 
 
 def installed_certificates(device):
+    # Some Android versions return exit 1 (with no output) for pm path when
+    # the app is absent. Establish absence through a successful package query;
+    # never treat a failed query or an inaccessible installed APK as absence.
+    listing = device.shell('pm', 'list', 'packages', PACKAGE)
+    packages = listing.splitlines()
+    if any(not re.fullmatch(r'package:[A-Za-z0-9_.]+', line) for line in packages):
+        raise QualificationError('INSTALLED_PACKAGE_STATE_UNAVAILABLE')
+    if 'package:'+PACKAGE not in packages:
+        return None
     paths = re.findall(r'^package:(.+)$', device.shell('pm', 'path', PACKAGE), re.M)
     if not paths:
-        return None
+        raise QualificationError('INSTALLED_BASE_APK_UNAVAILABLE')
     base = next((p.strip() for p in paths if p.strip().endswith('/base.apk')), None)
     if base is None:
         raise QualificationError('INSTALLED_BASE_APK_UNAVAILABLE')
