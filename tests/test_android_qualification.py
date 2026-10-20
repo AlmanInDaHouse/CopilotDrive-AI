@@ -8,9 +8,40 @@ from unittest.mock import patch
 spec = importlib.util.spec_from_file_location('qualification', Path(__file__).resolve().parents[1] / 'scripts/qualify_android.py')
 q = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(q)
+recovery_spec = importlib.util.spec_from_file_location('recovery', Path(__file__).resolve().parents[1] / 'scripts/sprint7_recovery_smoke.py')
+recovery = importlib.util.module_from_spec(recovery_spec)
+with patch.dict('sys.modules', {'qualify_android': q}):
+    recovery_spec.loader.exec_module(recovery)
 
 
 class AndroidQualificationTests(unittest.TestCase):
+    def test_offline_failure_restores_both_network_transports(self):
+        states = {'wifi_on': '1', 'mobile_data': '0'}
+        calls = []
+        def shell(*args):
+            calls.append(args)
+            if args[:3] == ('settings', 'get', 'global'):
+                return states[args[3]]
+            if args[0] == 'svc':
+                key = 'wifi_on' if args[1] == 'wifi' else 'mobile_data'
+                states[key] = '1' if args[2] == 'enable' else '0'
+            return ''
+        restoration = {}
+        with self.assertRaises(RuntimeError):
+            with recovery.offline_transports(SimpleNamespace(shell=shell), restoration):
+                raise RuntimeError('injected')
+        self.assertEqual(dict(wifi_on='1', mobile_data='0'), states)
+        self.assertEqual('RESTORED', restoration['status'])
+        self.assertIn(('svc', 'wifi', 'enable'), calls)
+        self.assertIn(('svc', 'data', 'disable'), calls)
+
+    def test_unknown_network_state_is_blocked_before_modification(self):
+        device = SimpleNamespace(shell=unittest.mock.Mock(return_value='null'))
+        with self.assertRaises(q.QualificationError):
+            with recovery.offline_transports(device, {}):
+                self.fail('must not start scenario')
+        self.assertTrue(all(call.args[0] == 'settings' for call in device.shell.call_args_list))
+
     def args(self, **overrides):
         values = dict(install=False, launch=False, matrix=False, samples=0,
             allow_install=False, allow_active=False, allow_physical=False)
