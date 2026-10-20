@@ -9,7 +9,7 @@ Keep the Python/web prototype functional. Android must work without Python or AP
 DataStore and Android adapters. Inject dependencies through constructors; no domain Android imports.
 Sprint 2 AI contracts, response validation and ephemeral conversation live in `android/core`;
 HTTP, Android Keystore and consent UI live in `android/app`.
-Specifications live in `specs/000-product` through `specs/016-jank-compatibility`.
+Specifications live in `specs/000-product` through `specs/017-physical-pilot`.
 JSON schema version 1 uses epoch milliseconds, nullable metrics, explicit source and availability.
 
 ## Safety and privacy
@@ -113,3 +113,26 @@ Voice cancellation preserves completed written answers; old STT/TTS cleanup must
 a new session. Device Lab speech is foreground/cancellable. Recheck Places consent after
 location suspension and before provider invocation. Run VoiceReliabilityTest, PlacesScenarioTest,
 DeviceQualificationTest and AccessibilityTest for changes at these boundaries.
+
+
+Sprint10: Sprint9 merged through PR#10 at793a353; Android/Tests merge CI success.
+PhysicalPilot reuses qualification enums. Human acoustic confirmation is independent
+of callback and bound to exact session/build/attempt; the session-only UI cannot
+emit physical qualification. New attempt/cancel invalidates old confirmation. Acoustic
+probe foreground only, focus/20s timeout/cancellation; no recording or background mic.
+VoiceJourneyStage is closed and carries no transcript/tool arguments/provider reasoning;
+keep at most32 stages in memory. Normal written response survives every audio failure.
+Inspect PACKAGED permissions: Places adds FINE transitively; remove it explicitly
+and keep packaged-manifest regression. Never relax the coarse-only app policy.
+pilot_package.py is read-only, checks signature conflicts conservatively and never
+installs/launches/grants. Physical activity still needs explicit human authorization;
+performance consent is independent. No uninstall, downgrade or clear-data fallback.
+api26_offline.py requires named disposable AVD/API26 and opt-in, persists prior state,
+checks flags AND ConnectivityService before/after query, restores network including
+connected-network count. svc wifi137 here has a recorded SecurityException for missing
+shell CHANGE_WIFI_STATE: no root/grant workaround and no OOM inference. Settings UI
+is an explicit disposable alternative; overlays block rather than auto-dismiss.
+Test A fake-provider independence never proves test B Android radios disconnected.
+Pico TTS API26 crashed in libttspico; preserve the limitation and written fallback.
+Physical absence keeps voice/OBD/performance/interoperability/TalkBack PENDING.
+Do not repeat jank campaigns on a host failing memory/commit/paging guards.

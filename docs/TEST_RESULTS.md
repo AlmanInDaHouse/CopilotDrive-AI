@@ -1,3 +1,23 @@
+# Sprint10 — resultados de la candidata del piloto
+
+Los resultados finales, comandos, APK y limitaciones están en SPRINT10_REPORT.md.
+Baseline ejecutado: Python45/core43/testing67/app6 +34 instrumentadas API26 del APK
+Sprint9 =195 casos distintos. Baseline Gradle forzado:89 tareas ejecutadas, aprobado.
+Resultados finales host: Python52/core47/testing73/app6, todos sin fallos/errores/
+omitidas. Core/testing fueron ejecutados tras los cambios de contratos; el último
+build reutiliza suites sin entradas modificadas. Lint0 errores/12 avisos existentes.
+Build debug y AndroidTest aprobados. Instrumentación final:37/37 en API26/30/35 (111 ejecuciones,37 casos), con mismo
+APK/testAPK instalado antes/después. **215 casos distintos** en total. API26 offline
+B1/1 y snapshot agregado de conectividad restaurado, sin sumar otro caso. API30/35:
+0 crash/ANR nuevos en exit-info acotado; API26 contadores no soportados/Pico externo
+falló. Tiempos y referencias de evidencia en SPRINT10_REPORT.
+Nuevos casos:7 Python,4 core,6 testing y3 instrumentados; ejecuciones repetidas entre
+APIs y smoke offline se registran por separado, sin aumentar el total de casos únicos.
+El APK final excluye ACCESS_FINE_LOCATION de dependencias; la regresión consulta
+los permisos realmente empaquetados. Las observaciones humanas siguen PENDING.
+
+## Histórico hasta Sprint9
+
 # Sprint 9 — resultados ejecutados, 2026-10-20
 
 Base: Sprint 8 fusionado por PR #9 en main `504e9a7`. Workflows del merge:

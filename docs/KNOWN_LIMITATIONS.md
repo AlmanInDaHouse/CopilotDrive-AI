@@ -1,3 +1,28 @@
+# Sprint10 — limitaciones actuales
+
+Sin teléfono autorizado: STT/TTS físico y audibilidad humana, foco OEM, OBD/vehículo,
+TalkBack, multimedia/Maps/Waze/contactos reales y proveedores comerciales PENDING.
+Una confirmación en el panel es efímera; no sustituye acta ligada a dispositivo/APK.
+El preflight de firma es conservador y no califica rotación de claves; bloquea
+certificados distintos sin desinstalar. Debug conserva componentes de herramientas.
+
+API26 AOSP: svc wifi carece de CHANGE_WIFI_STATE para shell y termina137 después
+de SecurityException; no se atribuye a OOM. Settings es alternativa desechable,
+no habilitación privilegiada. Pico TTS/libttspico produjo SIGSEGV y diálogos; la
+suite escrita no significa TTS aprobado. Borrar un diálogo no corrige el motor.
+Los intentos/restauraciones fallidos y la repetición se conservan en el informe.
+
+El APK Sprint9 también incluía ACCESS_FINE_LOCATION transitivo de Places, aunque
+el código no lo solicitaba. Se retira de Sprint10 y se comprueba el APK final;
+las afirmaciones históricas de manifest coarse-only describían la fuente, no el merge.
+No se observó concesión runtime de FINE ni se afirma explotación o fuga de ubicación.
+
+Host con presión física/commit y paging: ningún benchmark nuevo, atribución de jank
+ni comparación PSS/TTID/TTFD. No optimización especulativa ni certificación OEM.
+Cierre abrupto puede impedir finally; instrucciones de restauración manual en guía.
+
+## Histórico hasta Sprint9
+
 # Limitaciones conocidas
 
 Base Sprint 9: Sprint 8 fusionado por PR #9, main `504e9a7`; ambos workflows del

@@ -24,3 +24,10 @@ Sprint 9/spec016: scripts jank_evidence/host_health/compatibility_android,
 test_jank_evidence, PlatformMediaTest y StabilityJourneyTest relacionan trazas,
 calificación API26/30/35, revocación y lifecycle. No prueban fluidez OEM ni ausencia
 de fugas; ver JANK_INVESTIGATION, MEMORY_INVESTIGATION y aceptación con bloqueos.
+
+
+Sprint10 /017: PhysicalPilotTest (session/build/evidence), PhysicalVoicePilotTest
+(callback/human separation, cancellation/recovery/privacy, A provider independence),
+PhysicalPilotUiTest (confirmation UI and packaged coarse-only permissions),
+test_api26_offline.py (network parser/restoration/failure and signature conflicts).
+Actual B and API results: docs/SPRINT10_REPORT.md; physical observations PENDING.

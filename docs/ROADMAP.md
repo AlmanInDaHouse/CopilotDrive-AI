@@ -1,3 +1,15 @@
+# Sprint10 — piloto físico preparado, calificación abierta
+
+Sprint9 fusionado por PR#10 en `793a353`; Android/Tests del merge success verificados.
+Sprint10 implementa confirmación acústica por intento, etapas de voz redactadas,
+contratos de acta/build y preflight pasivo de firma/permisos. API26: causa de svc
+fundamentada y alternativa Settings, sin elevar permisos. Exclusión explícita de
+ubicación precisa añadida al manifest fusionado. Ver SPRINT10_REPORT.md para ejecución.
+Sin teléfono ni observación humana: físico PENDING. Sprint11: campaña consentida
+STT/TTS/TalkBack y luego OBD/media/navegación; rendimiento solo con recursos válidos.
+
+## Histórico hasta Sprint9
+
 # Roadmap por incrementos
 0. Auditoría, baseline, specs y memoria.
 1. Shell Compose y simulador explícito.

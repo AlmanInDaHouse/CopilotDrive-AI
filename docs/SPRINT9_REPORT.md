@@ -1,3 +1,11 @@
+Actualización histórica Sprint10 (2026-10-20): Sprint9 fue fusionado mediante
+[PR #10](https://github.com/AlmanInDaHouse/CopilotDrive-AI/pull/10) en
+`793a3535713cd76cfbe6c85f9fbfb7bff21cb4b5`. Workflows del merge comprobados:
+[Android success](https://github.com/AlmanInDaHouse/CopilotDrive-AI/actions/runs/39454974296),
+[Tests success](https://github.com/AlmanInDaHouse/CopilotDrive-AI/actions/runs/39454974344).
+El resto conserva la entrega histórica previa al merge. Resultados nuevos, incluida
+la investigación de svc y los permisos transitorios del APK, en SPRINT10_REPORT.md.
+
 # Sprint 9 — Jank Forensics, Android Compatibility & Real-Device Validation
 
 2026-10-20, Europe/Madrid. Rama local `feat/sprint9-jank-compatibility`.

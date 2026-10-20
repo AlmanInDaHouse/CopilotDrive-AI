@@ -1,3 +1,20 @@
+# Sprint10 — sin cohorte nueva de rendimiento
+
+No se ejecutaron benchmarks ni se atribuyeron optimizaciones. Observación inicial
+Windows:326/367/574MiB disponibles, headroom2683–3030MiB; guarda
+HOST_PHYSICAL_MEMORY_PRESSURE. Otra observación:122–141MiB libres y529–538MiB
+headroom, también paging sostenido. Se detuvo un daemon Gradle propio inactivo;
+no se cerraron aplicaciones ajenas para fabricar condiciones válidas.
+
+El contexto inicial se recogió durante trabajo de baseline: es una precondición
+fallida, no medición de rendimiento de app. API26 guest y host son memorias distintas.
+Las duraciones de suites/smokes no son TTID/TTFD/FrameTiming ni comparación PSS.
+No nuevas trazas ni extrapolación SwiftShader/Radeon a teléfono. Sin heap/dominadores
+ni atribución nueva. Rendimiento físico PENDING, campaña host BLOCKED. Se conservan
+los resultados históricos, incluidos los inválidos de Sprint9, a continuación.
+
+## Histórico hasta Sprint9
+
 # Comparación de rendimiento — Sprints 8 y 9
 
 ## Sprint 9 — repetición forense, mismo binario

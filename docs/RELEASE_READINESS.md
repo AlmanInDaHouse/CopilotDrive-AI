@@ -1,3 +1,26 @@
+# Sprint10 — candidata debug para instalación controlada
+
+Revisión técnica local, sin publicación ni firma de producción. Resultados finales
+y hash en SPRINT10_REPORT.md. Instalación física pendiente de autorización explícita;
+preflight pasivo en scripts/pilot_package.py comprueba paquete/SDK/firma/permisos y
+posibles conflictos con la instalación previa. No uninstall, downgrade ni data clear.
+
+Se corrigió el permiso preciso transitivo de Places observado en APK Sprint9: el
+manifest final conserva coarse y elimina FINE mediante tools:node=remove, con test
+de permisos empaquetados. ACCESS_NETWORK_STATE, ACCESS_WIFI_STATE y permiso interno
+de receptor de AndroidX siguen declarados por dependencias; listado final completo
+obligatorio en apk-metadata.json. No hay nuevo permiso privilegiado, background o CAN.
+Las comprobaciones previas sobre manifest fuente no eran auditoría del merge real.
+La [documentación oficial de Places](https://developers.google.com/maps/documentation/places/android-sdk/legacy/current-place#permissions)
+explica la retirada de permisos transitivos cuando no se usa findCurrentPlace; aquí
+se conserva coarse para AndroidLocationProvider propio y se retira solo FINE.
+
+Gate físico: PENDING. Gate performance: BLOCKED por recursos del host. Motores OEM,
+Pico TTS de API26, TalkBack, OBD y proveedores no se aprueban por compilar ni por callback.
+No benchmark nuevo ni servicio comercial. Ver limitaciones e instrucciones del piloto.
+
+## Evaluación histórica Sprint9
+
 # Preparación técnica de distribución de prueba — Sprint 9
 
 Resultado: candidata técnica para revisión y ensayos consentidos; no publicación,

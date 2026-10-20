@@ -1,3 +1,25 @@
+# Sprint10 — matriz de evidencia física
+
+Descubrimiento pasivo inicial/final registrado en SPRINT10_REPORT: ningún teléfono
+autorizado; emulador únicamente. No instalación, voz, OBD ni accesibilidad física.
+Todas las filas físicas de abajo conservan PENDING. No se detectó ni calificó un
+ELM327/coche desde Windows; su disponibilidad física no se inventa.
+
+| Escenario Sprint10 | Nivel/estado | Evidencia |
+| --- | --- | --- |
+| Confirmación acústica y vínculo sesión/build | AUTOMATED_TESTED | PhysicalPilotTest y PhysicalVoicePilotTest |
+| Controles y permisos empaquetados | EMULATOR_TESTED cuando se ejecutan | PhysicalPilotUiTest; tabla final en informe |
+| A: proveedor fake sin red | AUTOMATED_TESTED | consulta local, cero llamadas AI |
+| B: Android26 sin conectividad | EMULATOR_TESTED para intento aprobado | ConnectivityService + flags antes/después + consulta local; informe API26 |
+| Acústica humana, STT/TTS es-ES físico | PENDING | Sin observador/dispositivo |
+| OBD, vehículo, rendimiento físico, interoperabilidad y TalkBack | PENDING | Sin hardware/autorización/observación |
+
+Acta nueva: specs/017-physical-pilot/pilot-record-template.json. Procedimiento:
+PHYSICAL_PILOT_GUIDE.md y VOICE_QUALIFICATION.md. No copiar resultados del emulador
+a una fila PHYSICALLY_VERIFIED.
+
+## Matriz histórica, todos los pendientes físicos se conservan
+
 # Matriz de validación física — actualizada en Sprint 9
 
 Estado de todas las integraciones físicas: `PENDING`. Sprint 9 repitió descubrimiento ADB pasivo:
