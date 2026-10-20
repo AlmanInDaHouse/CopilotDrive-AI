@@ -11,9 +11,15 @@ ANDROID = '{http://schemas.android.com/apk/res/android}'
 def main():
     manifest = ET.parse(ROOT / 'android/app/src/main/AndroidManifest.xml').getroot()
     permissions = {p.attrib[ANDROID + 'name'] for p in manifest.findall('uses-permission')}
-    assert permissions == {'android.permission.RECORD_AUDIO', 'android.permission.READ_CONTACTS'}, permissions
+    assert permissions == {'android.permission.RECORD_AUDIO', 'android.permission.READ_CONTACTS', 'android.permission.INTERNET'}, permissions
     assert manifest.find('application').attrib[ANDROID + 'usesCleartextTraffic'] == 'false'
     assert manifest.find('application').attrib[ANDROID + 'allowBackup'] == 'false'
+    main_network = ET.parse(ROOT / 'android/app/src/main/res/xml/network_security_config.xml').getroot()
+    assert main_network.find('base-config').attrib['cleartextTrafficPermitted'] == 'false'
+    debug_network = ET.parse(ROOT / 'android/app/src/debug/res/xml/network_security_config.xml').getroot()
+    assert debug_network.find('base-config').attrib['cleartextTrafficPermitted'] == 'false'
+    assert {d.text for d in debug_network.findall('domain-config/domain')} == {'localhost', '127.0.0.1', '10.0.2.2'}
+    assert all(d.attrib.get('includeSubdomains') == 'false' for d in debug_network.findall('domain-config/domain'))
     for source in (ROOT / 'android/core/src/main').rglob('*.kt'):
         assert 'import android.' not in source.read_text(encoding='utf-8'), source
     app_dependencies = (ROOT / 'android/app/build.gradle.kts').read_text(encoding='utf-8')

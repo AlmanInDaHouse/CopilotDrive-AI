@@ -36,6 +36,7 @@ class ToolRegistry(
 ) {
     val definitions = listOf(
         ToolDefinition("vehicle.get_fuel", "vehicle.fuel"),
+        ToolDefinition("vehicle.get_range", "vehicle.fuel"),
         ToolDefinition("vehicle.get_temperature", "vehicle.temperature"),
         ToolDefinition("vehicle.get_snapshot", "vehicle.snapshot"),
         ToolDefinition("media.get_current", "media.session_access"),
@@ -69,11 +70,13 @@ class ToolRegistry(
     }
 
     private suspend fun dispatch(request: ToolRequest): ToolResult = when (request.toolId) {
-        "vehicle.get_fuel", "vehicle.get_temperature", "vehicle.get_snapshot" -> {
+        "vehicle.get_fuel", "vehicle.get_range", "vehicle.get_temperature", "vehicle.get_snapshot" -> {
             val snapshot = vehicle.snapshot()
             val prefix = if (snapshot.simulationMode) "Simulación. " else "Fuente ${snapshot.source}. "
             val message = when (request.toolId) {
                 "vehicle.get_fuel" -> describe("Combustible", snapshot.fuelLevelPercent)
+                "vehicle.get_range" -> if (snapshot.vehicleRangeKm.availability in setOf(Availability.AVAILABLE, Availability.SIMULATED))
+                    describe("Autonomía", snapshot.vehicleRangeKm) else "No tengo una estimación fiable de autonomía para ese vehículo."
                 "vehicle.get_temperature" -> describe("Refrigerante", snapshot.coolantTemperatureC)
                 else -> describe("Combustible", snapshot.fuelLevelPercent) + " " +
                     describe("Refrigerante", snapshot.coolantTemperatureC) + " " + describe("Autonomía", snapshot.vehicleRangeKm)

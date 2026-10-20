@@ -2,7 +2,8 @@ package ai.copilotdrive.core
 
 import java.text.Normalizer
 import java.util.Locale
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
 
 fun normalize(text: String) = Normalizer.normalize(text.lowercase(Locale.ROOT), Normalizer.Form.NFD)
     .replace(Regex("\\p{M}+"), "").trim().trim('¿', '?', '.', '¡', '!')
@@ -11,7 +12,7 @@ class IntentResolver {
     fun resolve(text: String): ToolRequest? {
         val original = text.trim().replace(Regex("^jarvis[, ]*", RegexOption.IGNORE_CASE), "")
         val normalized = normalize(original)
-        if (normalized.matches(Regex("(cuanta gasolina( me)? queda|cuanto combustible( me)? queda|combustible|gasolina|nivel de combustible)"))) return ToolRequest("vehicle.get_fuel")
+        if (normalized.matches(Regex("(cuanta gasolina( me)? (queda|tengo)|cuanto combustible( me)? (queda|tengo)|combustible|gasolina|nivel de combustible)"))) return ToolRequest("vehicle.get_fuel")
         if (normalized in setOf("temperatura", "temperatura del motor", "refrigerante")) return ToolRequest("vehicle.get_temperature")
         if (normalized in setOf("estado del coche", "como esta el coche", "estado del vehiculo")) return ToolRequest("vehicle.get_snapshot")
         if (normalized in setOf("pon musica", "reproduce musica", "play")) return ToolRequest("media.play")
@@ -39,10 +40,13 @@ class AssistantOrchestrator(
     private val clock: Clock,
     private val ai: AIProvider? = null,
     private val resolver: IntentResolver = IntentResolver(),
+    private val conversation: ConversationStore = EphemeralConversationStore(),
 ) {
     private data class Pending(val contacts: List<Contact>, val expiresAt: Long)
     private var pending: Pending? = null
     fun cancelPending() { pending = null }
+    fun clearConversation(sessionId: String) { conversation.clear(sessionId); pending = null }
+    fun clearAllConversations() { conversation.clearAll(); pending = null }
 
     suspend fun answer(request: AssistantRequest): ToolResult {
         if (request.userText.length > 400 || request.userText.isBlank()) return ToolResult.denied("assistant", "INVALID_INPUT", "Di un comando breve.")
@@ -70,15 +74,48 @@ class AssistantOrchestrator(
         }
         pending = null
         val resolved = resolver.resolve(request.userText)
-        val proposed = resolved ?: withTimeoutOrNull(5_000) { ai?.propose(request.copy(contextReferences = emptySet())) }
-        if (proposed == null) return ToolResult("assistant", ExecutionStatus.SUCCESS,
+        // Range cannot be inferred from fuel percentage. Resolve it against real data first.
+        if (normalized.contains("autonomia") || normalized.contains("kilometros puedo recorrer")) {
+            val value = tools.execute(ToolRequest("vehicle.get_range"))
+            return value
+        }
+        if (resolved == null && ai == null) return ToolResult("assistant", ExecutionStatus.SUCCESS,
             "Prueba: cuánta gasolina queda, temperatura, pausa la música o llévame a un destino. IA externa no configurada.")
+        val response = if (resolved == null) try {
+            withTimeout(31_000) {
+                ai?.generate(AIRequest(request.userText, conversation.history(request.sessionId), tools.definitions.values
+                    .filter { it.id !in setOf("contacts.search", "phone.open_dialer", "places.search_nearby") }, request.locale))
+            }
+        } catch (_: TimeoutCancellationException) {
+            AIResponse.Unavailable(AIError("TIMEOUT", "La IA ha agotado el tiempo de espera."))
+        } else null
+        if (response is AIResponse.Text) {
+            val actionClaim = Regex("\\b(he|hemos|ya)\\s+(pausado|abierto|llamado|reproducido|apagado|encendido|ejecutado|cambiado)\\b|\\b(acción|operación)\\s+(completada|realizada)\\b", RegexOption.IGNORE_CASE)
+            if (actionClaim.containsMatchIn(response.content)) return ToolResult.denied("assistant", "UNVERIFIED_ACTION", "La IA afirmó una acción que no se ha verificado.")
+            return remember(request, ToolResult("assistant", ExecutionStatus.SUCCESS,
+                "IA externa (sin acciones ejecutadas): " + response.content.take(1_400)))
+        }
+        if (response is AIResponse.Unavailable) return ToolResult("assistant", ExecutionStatus.FAILED, response.error.message, response.error.code)
+        if (response is AIResponse.Invalid) return ToolResult.denied("assistant", response.error.code, response.error.message)
+        val proposed = resolved ?: (response as? AIResponse.ProposedTool)?.proposal?.asRequest()
+        if (proposed == null) return ToolResult("assistant", ExecutionStatus.FAILED, "IA no disponible.", "AI_UNAVAILABLE")
+        if (resolved == null && proposed.toolId in setOf("contacts.search", "phone.open_dialer", "places.search_nearby"))
+            return ToolResult.denied(proposed.toolId, "AI_TOOL_DENIED", "Esa acción requiere una petición directa.")
         val result = tools.execute(proposed)
         // Only a direct user contact command can establish pending confirmation; AI output cannot.
         if (resolved?.toolId == "contacts.search" && result.contacts.isNotEmpty()) {
             pending = Pending(result.contacts, clock.now() + 30_000)
             if (result.contacts.size == 1) return promptConfirmation(result.contacts.single())
             return result.copy(message = "Hay varios contactos. Di el número: " + result.contacts.mapIndexed { i, c -> "${i + 1}, ${c.name}, termina en ${c.number.takeLast(3)}" }.joinToString(". "))
+        }
+        // Tool output can contain telemetry or contact data; never add it to remote history.
+        return result
+    }
+
+    private fun remember(request: AssistantRequest, result: ToolResult): ToolResult {
+        if (result.executionStatus == ExecutionStatus.SUCCESS) {
+            conversation.append(request.sessionId, ConversationMessage(ConversationRole.USER, request.userText))
+            conversation.append(request.sessionId, ConversationMessage(ConversationRole.ASSISTANT, result.message))
         }
         return result
     }

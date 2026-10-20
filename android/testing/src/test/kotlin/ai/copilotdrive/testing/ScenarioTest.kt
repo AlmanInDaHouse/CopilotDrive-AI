@@ -180,6 +180,16 @@ class ScenarioTest {
         assertEquals(VoiceState.ERROR, voice.state.value.state)
     }
 
+    @Test fun `tts timeout preserves visual answer and identifies voice fault`() = runTest {
+        val h = TestHarness()
+        h.tts.delayMs = 21_000
+        val voice = VoiceSessionCoordinator(this, h.stt, h.tts, h.assistant, h.focus, h.clock) { true }
+        voice.listen(); advanceUntilIdle()
+        assertEquals(VoiceState.ERROR, voice.state.value.state)
+        assertEquals("TTS", voice.state.value.errorSource)
+        assertTrue(voice.state.value.message.contains("42 %"))
+    }
+
     @Test fun `caller cancellation propagates through tools`() = runTest {
         val h = TestHarness()
         h.vehicle.delayMs = 2_000

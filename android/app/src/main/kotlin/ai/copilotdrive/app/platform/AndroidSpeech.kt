@@ -77,16 +77,19 @@ class AndroidTextToSpeech(context: Context) : TextToSpeechProvider {
     private val ready = CompletableDeferred<Boolean>()
     private val engine = TextToSpeech(context) { status -> ready.complete(status == TextToSpeech.SUCCESS) }
     val voices = MutableStateFlow<List<InstalledVoice>>(emptyList())
+    val status = MutableStateFlow("Inicializando motor TTS…")
     private var pending: Pair<String, CancellableContinuation<Unit>>? = null
     var selectedVoice: String = ""
     var rate = 1f
     var pitch = 1f
 
     suspend fun initialize() = withContext(Dispatchers.Main.immediate) {
-        if (!ready.await()) return@withContext
-        engine.setLanguage(Locale.forLanguageTag("es-ES"))
-        voices.value = engine.voices.orEmpty().filter { !it.isNetworkConnectionRequired && "notInstalled" !in it.features.orEmpty() }
+        if (!ready.await()) { status.value = "Motor TTS ausente o falló la inicialización."; return@withContext }
+        val language = engine.isLanguageAvailable(Locale.forLanguageTag("es-ES"))
+        if (language < TextToSpeech.LANG_AVAILABLE) { status.value = "No hay datos de voz para es-ES. Instálalos desde Android."; return@withContext }
+        voices.value = engine.voices.orEmpty().filter { it.locale.toLanguageTag().equals("es-ES", true) && !it.isNetworkConnectionRequired && "notInstalled" !in it.features.orEmpty() }
             .sortedBy { it.name }.map { InstalledVoice(it.name, "${it.locale.displayName} · ${it.name}") }
+        status.value = if (voices.value.isEmpty()) "No hay voz local es-ES instalada." else "${voices.value.size} voz(es) local(es) es-ES disponible(s)."
         engine.setOnUtteranceProgressListener(object : UtteranceProgressListener() {
             override fun onStart(utteranceId: String?) = Unit
             override fun onDone(utteranceId: String?) { finish(utteranceId, null) }
@@ -106,10 +109,9 @@ class AndroidTextToSpeech(context: Context) : TextToSpeechProvider {
 
     override suspend fun speak(text: String) = withContext(Dispatchers.Main.immediate) {
         check(ready.await())
-        val localVoices = engine.voices.orEmpty().filter { !it.isNetworkConnectionRequired && "notInstalled" !in it.features.orEmpty() }
-        val voice = localVoices.firstOrNull { it.name == selectedVoice }
-            ?: localVoices.firstOrNull { it.locale.language == "es" }
-            ?: error("No installed Spanish voice")
+        val localVoices = engine.voices.orEmpty().filter { it.locale.toLanguageTag().equals("es-ES", true) && !it.isNetworkConnectionRequired && "notInstalled" !in it.features.orEmpty() }
+        val voice = if (selectedVoice.isBlank()) localVoices.firstOrNull() else localVoices.firstOrNull { it.name == selectedVoice }
+            ?: error("No hay voz local es-ES seleccionada")
         check(engine.setVoice(voice) == TextToSpeech.SUCCESS)
         engine.setSpeechRate(rate.coerceIn(0.7f, 1.3f)); engine.setPitch(pitch.coerceIn(0.7f, 1.3f))
         suspendCancellableCoroutine<Unit> { continuation ->
