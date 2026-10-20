@@ -30,11 +30,20 @@ fun DashboardScreen(
         BoxWithConstraints(Modifier.fillMaxSize().padding(insets)) {
             val fontScale = LocalDensity.current.fontScale
             val columns = dashboardColumns(maxWidth.value, fontScale)
+            val shortLandscape = maxHeight / fontScale < 420.dp && maxWidth / fontScale >= 600.dp
             val projected = remember(layout, columns) { LayoutEngine.project(layout, columns) }
             val rows = remember(projected) { projected.groupBy { it.placement.row }.values.toList() }
             LazyColumn(Modifier.fillMaxSize().testTag("dashboard"), contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 item(key = "header") {
+                    if (shortLandscape) {
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) { Eyebrow("COPILOT / DRIVE"); Text(state.clock, color = Mint, fontSize = 22.sp) }
+                            OutlinedButton(onClick = onEdit, modifier = Modifier.heightIn(min = 56.dp).testTag("edit-dashboard")) { Text("Personalizar") }
+                            OutlinedButton(onClick = onPlaces, modifier = Modifier.heightIn(min = 56.dp).testTag("open-places")) { Text("Lugares") }
+                        }
+                        layoutNotice?.let { Text(it, color = Amber) }
+                    } else {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Eyebrow("COPILOT / DRIVE")
                         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -46,6 +55,7 @@ fun DashboardScreen(
                             OutlinedButton(onClick = onPlaces, modifier = Modifier.heightIn(min = 56.dp).testTag("open-places")) { Text("Lugares") }
                         }
                         layoutNotice?.let { Text(it, color = Amber) }
+                    }
                     }
                 }
                 items(rows, key = { row -> row.joinToString { it.id } }) { row ->

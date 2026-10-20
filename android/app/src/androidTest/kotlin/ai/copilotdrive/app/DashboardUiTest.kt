@@ -62,6 +62,7 @@ class DashboardUiTest {
         }
         compose.onNodeWithTag("push-to-talk").assertIsDisplayed()
         compose.onNodeWithTag("demo-fuel").assertIsDisplayed()
+        compose.onNodeWithTag("fuel-value").assertIsDisplayed()
     }
 
     @Test fun portraitKeepsVoiceActionsAndResultVisible() {

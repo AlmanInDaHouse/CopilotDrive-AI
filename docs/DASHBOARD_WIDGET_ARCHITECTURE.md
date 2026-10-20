@@ -14,7 +14,10 @@ LayoutEngine valida versión, IDs/tipos duplicados, tamaños, posiciones, límit
 solapes y existencia de alguna tarjeta visible. First-fit estable usa cuatro columnas
 canónicas y hasta 32 filas lógicas. Cambios de orden/tamaño reempaquetan sin azar.
 Ocultas también tienen posición válida; proyección omite ocultas y adapta a 1/2/4
-columnas según dp disponibles divididos por fontScale. No convierte píxeles en dp.
+columnas según dp disponibles divididos por fontScale. Los spans se proyectan
+proporcionalmente: expandida ocupa una columna en una pantalla de dos columnas;
+panorámica ocupa ambas. No convierte píxeles en dp. En landscape bajo, la cabecera
+se compacta para mantener el combustible visible antes de desplazar.
 Cada fila tiene altura natural; una LazyColumn desplaza el contenido sin scroll anidado.
 Rotar no modifica el JSON. Véase ADR-007.
 

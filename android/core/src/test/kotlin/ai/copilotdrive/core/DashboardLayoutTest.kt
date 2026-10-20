@@ -60,6 +60,8 @@ class DashboardLayoutTest {
             assertTrue(LayoutEngine.validate(classic.copy(widgets = projection), columns).valid)
         }
         assertEquals(original, LayoutCodec.encode(classic))
+        assertEquals(WidgetSize.COMPACT, LayoutEngine.project(classic, 2).first().size)
+        assertEquals(WidgetSize.EXPANDED, LayoutEngine.project(classic, 2).first { it.type == WidgetType.ASSISTANT }.size)
     }
     @Test fun editAddHideMoveResizePresetCancelAndRestore() {
         var session = DashboardEditSession(classic)

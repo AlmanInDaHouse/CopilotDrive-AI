@@ -418,12 +418,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             "vehicle.obd_connected" to "Adaptador OBD", "navigation.google_maps" to "Google Maps", "navigation.waze" to "Waze",
             "contacts.access" to "Contactos", "phone.dialer" to "Marcador", "places.provider_configured" to "Lugares cercanos",
         )
-        val bluetoothStatus = when {
+        val bluetoothStatus = try { when {
             !bluetooth.present() -> "No disponible"
             !bluetooth.permitted() -> "Permiso requerido"
             !bluetooth.available() -> "Apagado o no disponible"
             else -> "Radio disponible · no implica ELM conectado"
-        }
+        } } catch (_: SecurityException) { "Permiso requerido" }
         mutable.update { it.copy(capabilities = labels.map { (id, label) -> Capability(id, capabilities.get(id), label) }, bluetoothStatus = bluetoothStatus) }
     }
     override fun onCleared() { background(); bluetooth.dispose(); assistant.clearAllConversations(); tts.close(); super.onCleared() }

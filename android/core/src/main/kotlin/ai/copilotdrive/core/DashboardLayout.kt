@@ -84,7 +84,10 @@ object LayoutEngine {
         }
     }
     fun project(layout: DashboardLayout, columns: Int): List<WidgetInstance> = pack(
-        layout.widgets.filter { it.visibility == WidgetVisibility.VISIBLE }, columns)
+        layout.widgets.filter { it.visibility == WidgetVisibility.VISIBLE }.map { widget ->
+            val span = (widget.size.columns * columns + 3) / 4
+            widget.copy(size = WidgetRegistry.definition(widget.type).sizes.filter { it.columns <= span }.maxBy { it.columns })
+        }, columns)
 }
 
 object WidgetLayouts {
@@ -97,7 +100,12 @@ object WidgetLayouts {
         }
         return DashboardLayout(preset = preset, widgets = LayoutEngine.pack(types.mapIndexed { index, type ->
             WidgetInstance(WidgetRegistry.definition(type).id, type,
-                if (index == 0 && preset in setOf(DashboardPreset.DRIVER, DashboardPreset.MEDIA)) WidgetSize.WIDE else WidgetSize.EXPANDED)
+                when {
+                    preset == DashboardPreset.CLASSIC && type == WidgetType.ASSISTANT -> WidgetSize.WIDE
+                    preset == DashboardPreset.CLASSIC && type != WidgetType.VEHICLE -> WidgetSize.COMPACT
+                    index == 0 && preset in setOf(DashboardPreset.DRIVER, DashboardPreset.MEDIA) -> WidgetSize.WIDE
+                    else -> WidgetSize.EXPANDED
+                })
         }))
     }
 }
