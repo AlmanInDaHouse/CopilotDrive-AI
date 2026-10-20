@@ -27,6 +27,14 @@ actúa sobre teléfonos. EMULATOR es la única advertencia de calidad de medici�
 suprimida explícitamente; no se suprimen errores debuggable/profileable/seguridad.
 Los benchmarks no se suman a tests funcionales y no bloquean el CI principal.
 
+Los runners comprueban ActivityManager: ADB y boot_completed no bastan si falla el
+framework. No reinician el emulador automáticamente. Con CompilationMode.None se
+exige API34+ para evitar la reinstalación implícita de datos que la herramienta
+puede necesitar en APIs anteriores. Para API26/30 debe prepararse y revisarse una
+estrategia CompilationMode.Ignore; la ejecución sigue PENDING, no se fuerza None.
+El scroll usa margen relativo a ambas dimensiones, velocidad800px/s y una assertion
+de desplazamiento; dos gestos rápidos que no producen frames no son una muestra válida.
+
 JSON nativo y Perfetto se guardan bajo Android/media del paquete del test. Copiarlos
 a artifacts/sprint8/macro solo para revisión local; revisar/redactar antes de
 compartir: las trazas pueden contener metadatos del sistema. Con ejecución Gradle

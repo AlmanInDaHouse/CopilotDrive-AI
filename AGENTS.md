@@ -73,6 +73,14 @@ growth alone cannot prove a leak. Keep raw Perfetto/device logs ignored and revi
 before sharing. No emulator/automation can produce a human acoustic observation.
 Provider credential lookup may suspend: recheck consent AFTER the lookup and before
 transport. Keystore IO is serialized off Main; never cache plaintext credentials.
+ADB and boot_completed do not establish framework readiness: check ActivityManager
+before instrumentation. Runners never reboot automatically. CompilationMode.None
+is guarded to API34+ because older resets may reinstall data; prepare Ignore safely
+before API26/30 benchmarking. Scroll gestures must move content and produce frames;
+do not turn zero captured frames into zero jank. Preserve failed attempts.
+connectedDebugAndroidTest may uninstall the app/data when finished. For an emulator
+whose state must survive, use install -r and am instrument directly; connected CI
+tests belong on disposable AVDs. Record any preservation incident explicitly.
 
 Sprint 7: `DeviceQualification` reuses diagnostic EvidenceLevel and enforces build/API/model,
 preconditions, method and observation provenance. CompatibilityStatus is independent of

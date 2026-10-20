@@ -5,13 +5,13 @@ EvidenceLevel, DeviceQualification and CompatibilityStatus reuse Sprint 7.
 
 | Contract | Required semantics |
 | --- | --- |
-| PerformanceScenario | Closed journey identifier and explicit preconditions |
+| PerformanceScenario | Closed journey identifier; prerequisites defined in spec and enforced by runner/setup guards |
 | BenchmarkEnvironment | Exact commit/APK, qualification environment, variant, compilation, display conditions |
 | BenchmarkSample | Iteration, nonnegative finite value, explicit unit and measurement kind |
 | StartupMeasurement | Start mode, TTID, nullable TTFD, separate external UI bound |
 | FrameTimingMeasurement | CPU durations; nullable overrun (requires API 31); sampled frame count |
 | MemoryMeasurement | PSS KiB and elapsed monotonic observation time |
-| StabilityScenario | Closed local scenario, repetition count and restoration requirement |
+| StabilityScenario | Closed local scenario identifier; runner bounds repetitions and records restoration |
 | RegressionThreshold | Minimum 20 comparable samples, allowed relative change; advisory |
 | PhysicalTestRecord | Reuses DeviceQualification; verified physical result requires human observation |
 | ReleaseCandidateReadiness | Per-check state; missing checks stay pending; physical status is independently derived |

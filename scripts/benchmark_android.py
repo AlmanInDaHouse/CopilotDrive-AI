@@ -9,11 +9,17 @@ import json
 from pathlib import Path
 import re
 from qualify_android import ROOT, Device, QualificationError, command, devices, find_adb, verify_apk
-from stability_android import require_emulator
+from stability_android import require_emulator, require_framework
 
 TARGET = 'ai.copilotdrive.app.benchmark'
 TEST = 'ai.copilotdrive.macrobenchmark'
 METHODS = ('coldStartup', 'warmStartup', 'hotStartup', 'dashboardScroll', 'settingsAndLab', 'presetDraft', 'backgroundRestore')
+
+
+def require_safe_compilation_api(api):
+    # CompilationMode.None may reinstall the target before API34. Never clear data implicitly.
+    if api < 34:
+        raise QualificationError('OLDER_API_REQUIRES_NONDESTRUCTIVE_COMPILATION_STRATEGY')
 
 
 def main(argv=None):
@@ -29,6 +35,7 @@ def main(argv=None):
     report = dict(status='PENDING', physicalQualification='PENDING', method=args.method,
         iterations=args.iterations, suppressedErrors=['EMULATOR'], compilation='None',
         commit=command(['git', '-C', ROOT, 'rev-parse', 'HEAD']))
+    report['workingTreeDirty'] = bool(command(['git', '-C', ROOT, 'status', '--porcelain']))
     try:
         if not 1 <= args.iterations <= 100:
             raise QualificationError('INVALID_ITERATIONS')
@@ -37,7 +44,9 @@ def main(argv=None):
             raise QualificationError('TARGET_NOT_AUTHORIZED')
         device = Device(adb, args.serial, 'device')
         require_emulator(device, args.allow_active)
+        require_framework(device)
         report['environment'] = device.environment()
+        require_safe_compilation_api(report['environment']['androidApi'])
         # Fixed package/build outputs. Never install or replace the normal debug app.
         target_apk = ROOT / 'android/app/build/outputs/apk/benchmark/app-benchmark.apk'
         test_apk = ROOT / 'android/macrobenchmark/build/outputs/apk/benchmark/macrobenchmark-benchmark.apk'
@@ -62,6 +71,9 @@ def main(argv=None):
             report['status'] = 'EMULATOR_BENCHMARKED' if passed else 'FAILED'
             if not passed:
                 report['errorCode'] = 'MACROBENCHMARK_FAILED_REVIEW_LOCAL_DEVICE_LOG'
+                # Local ignored diagnostic only; review/redact before any export.
+                args.out.parent.mkdir(parents=True, exist_ok=True)
+                args.out.with_suffix('.failure.log').write_text(result, encoding='utf-8')
     except (QualificationError, ValueError, OSError) as error:
         report.update(status='BLOCKED', errorCode=str(error) if isinstance(error, QualificationError) else 'INVALID_ENVIRONMENT')
     args.out.parent.mkdir(parents=True, exist_ok=True)

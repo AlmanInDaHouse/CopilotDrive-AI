@@ -8,10 +8,24 @@ from unittest.mock import Mock, patch
 SCRIPTS = Path(__file__).resolve().parents[1] / 'scripts'
 sys.path.insert(0, str(SCRIPTS))
 import stability_android as stability
+import benchmark_android as benchmark
 from qualify_android import QualificationError
 
 
 class AndroidStabilityTests(unittest.TestCase):
+    def test_older_api_cannot_implicitly_reinstall_benchmark_data(self):
+        for api in (26, 30, 33):
+            with self.assertRaises(QualificationError):
+                benchmark.require_safe_compilation_api(api)
+        benchmark.require_safe_compilation_api(34)
+        benchmark.require_safe_compilation_api(35)
+
+    def test_adb_response_does_not_imply_android_framework_is_running(self):
+        for response in ('Service activity: not found', '', 'Service package: found'):
+            with self.assertRaises(QualificationError):
+                stability.require_framework(SimpleNamespace(shell=Mock(return_value=response)))
+        stability.require_framework(SimpleNamespace(shell=Mock(return_value='Service activity: found')))
+
     def test_rejects_physical_before_mutation(self):
         device = SimpleNamespace(kind=Mock(return_value='PHYSICAL'), shell=Mock())
         with self.assertRaises(QualificationError):
@@ -65,6 +79,14 @@ class AndroidStabilityTests(unittest.TestCase):
             self.assertFalse(tested)
         self.assertEqual('PENDING', restoration['status'])
         self.assertEqual(1, shell.call_count)
+
+    def test_denied_permission_with_flags_needs_no_mutation(self):
+        shell = Mock(return_value='android.permission.RECORD_AUDIO: granted=false, flags=[ USER_SET ]')
+        restoration = {}
+        with stability.revoked_microphone(SimpleNamespace(shell=shell), restoration) as tested:
+            self.assertTrue(tested)
+        self.assertEqual('RESTORED', restoration['status'])
+        self.assertTrue(all(call.args[0] == 'dumpsys' for call in shell.call_args_list))
 
 
 if __name__ == '__main__':

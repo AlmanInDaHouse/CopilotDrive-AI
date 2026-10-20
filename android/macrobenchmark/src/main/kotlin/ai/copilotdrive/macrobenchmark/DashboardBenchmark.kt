@@ -46,8 +46,15 @@ class DashboardBenchmark {
     )
     @Test fun dashboardScroll() = journey {
         val dashboard = device.findObject(By.res("dashboard"))
-        dashboard.setGestureMargin(device.displayWidth / 5)
-        dashboard.swipe(Direction.UP, .7f); dashboard.swipe(Direction.DOWN, .7f)
+        check(dashboard.isScrollable) { "DASHBOARD_NOT_SCROLLABLE" }
+        val bounds = dashboard.visibleBounds
+        dashboard.setGestureMargin(minOf(bounds.width(), bounds.height()) / 10)
+        val headerBefore = checkNotNull(device.findObject(By.res("edit-dashboard"))).visibleBounds.top
+        dashboard.swipe(Direction.UP, .8f, 800)
+        device.waitForIdle()
+        val headerAfter = device.findObject(By.res("edit-dashboard"))?.visibleBounds?.top
+        check(headerAfter == null || headerAfter < headerBefore) { "SCROLL_DID_NOT_MOVE" }
+        dashboard.swipe(Direction.DOWN, .8f, 800)
         device.waitForIdle()
     }
     @Test fun settingsAndLab() = journey {
@@ -70,9 +77,23 @@ class DashboardBenchmark {
     }
     @Test fun presetDraft() = journey {
         device.findObject(By.res("edit-dashboard")).click()
-        checkNotNull(device.wait(Until.findObject(By.res("layout-laboratory")), 5_000)).click()
-        device.findObject(By.res("confirm-layout-laboratory")).click()
-        checkNotNull(device.wait(Until.findObject(By.res("preset-MEDIA")), 5_000)).click()
+        // AlertDialog is a separate window: the Surface's resource-id semantics do not cross it.
+        checkNotNull(device.wait(Until.findObject(By.desc("Activar modo laboratorio")), 5_000)).click()
+        device.waitForIdle()
+        checkNotNull(device.wait(Until.findObject(By.text("Confirmo entorno de prueba detenido")), 5_000)).click()
+        val editor = checkNotNull(device.wait(Until.findObject(By.res("dashboard-editor")), 5_000))
+        val bounds = editor.visibleBounds
+        editor.setGestureMargin(minOf(bounds.width(), bounds.height()) / 10)
+        var preset = device.findObject(By.res("preset-MEDIA"))
+        repeat(6) {
+            if (preset == null) {
+                editor.swipe(Direction.UP, .7f, 800)
+                device.waitForIdle()
+                preset = device.findObject(By.res("preset-MEDIA"))
+            }
+        }
+        checkNotNull(preset) { "PRESET_NOT_VISIBLE" }.click()
+        device.waitForIdle()
         device.pressBack(); waitDashboard() // Draft discarded; no persistent layout mutation.
     }
 }

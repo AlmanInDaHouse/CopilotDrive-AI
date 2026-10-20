@@ -22,6 +22,12 @@ def require_emulator(device, allow_active):
         raise QualificationError('EXPLICIT_EMULATOR_ACTIVITY_REQUIRED')
 
 
+def require_framework(device):
+    # ADB and boot_completed may still respond after system_server has failed.
+    if device.shell('service', 'check', 'activity') != 'Service activity: found':
+        raise QualificationError('ANDROID_FRAMEWORK_UNAVAILABLE')
+
+
 def pss_kib(output):
     match = re.search(r'TOTAL PSS:\s*(\d+)', output) or re.search(r'^\s*TOTAL\s+(\d+)', output, re.M)
     if not match or int(match[1]) <= 0:
@@ -51,7 +57,7 @@ def revoked_microphone(device, restoration):
         raise QualificationError('PERMISSION_STATE_UNAVAILABLE')
     granted, flags = match[1] == 'true', match[2].strip()
     # pm grant cannot reconstruct one-time / fixed flags safely: skip before mutation.
-    if flags:
+    if granted and flags:
         restoration.update(status='PENDING', reason='NONEMPTY_PERMISSION_FLAGS')
         yield False
         return
@@ -86,6 +92,7 @@ def main(argv=None):
         commit=command(['git', '-C', ROOT, 'rev-parse', 'HEAD']), samples=[],
         scenarios=['restart', 'foreground', 'preset draft', 'passive lab', 'Places panel', 'recreate', 'rotation', 'microphone denied'],
         excluded=['real audio', 'real OBD', 'paid providers', 'contacts', 'navigation intents'])
+    report['workingTreeDirty'] = bool(command(['git', '-C', ROOT, 'status', '--porcelain']))
     try:
         if not 1 <= args.cycles <= 1000:
             raise QualificationError('INVALID_CYCLE_COUNT')
@@ -94,6 +101,7 @@ def main(argv=None):
             raise QualificationError('TARGET_NOT_AUTHORIZED')
         device = Device(adb, args.serial, 'device')
         require_emulator(device, args.allow_active)
+        require_framework(device)
         report['environment'] = device.environment()
         report['apkSha256'] = verify_apk(args.apk, args.expected_sha256)
         installed = re.search(r'^package:(.+base\.apk)$', device.shell('pm', 'path', PACKAGE), re.M)
