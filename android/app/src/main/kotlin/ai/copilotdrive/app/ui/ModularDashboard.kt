@@ -104,11 +104,13 @@ internal fun EssentialControls(state: DashboardState, onSettings: () -> Unit, on
                         OutlinedButton(onClick = onSettings, modifier = Modifier.heightIn(min = 56.dp)) { Text("Ajustes") }
                     }
                 } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     VoiceButton(busy, onListen, onCancel, Modifier.fillMaxWidth())
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(onClick = { onDemo("Jarvis, cuánta gasolina queda") }, enabled = !busy,
                             modifier = Modifier.weight(1f).heightIn(min = 48.dp).testTag("demo-fuel")) { Text("Probar consulta") }
                         OutlinedButton(onClick = onSettings, modifier = Modifier.weight(1f).heightIn(min = 48.dp)) { Text("Ajustes") }
+                    }
                     }
                 }
             }

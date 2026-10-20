@@ -14,6 +14,7 @@ import ai.copilotdrive.app.ui.*
 import ai.copilotdrive.core.*
 import org.junit.Rule
 import org.junit.Test
+import org.junit.Assert.assertTrue
 
 class DashboardAdaptiveTest {
     @get:Rule val compose = createComposeRule()
@@ -30,6 +31,10 @@ class DashboardAdaptiveTest {
         compose.onNodeWithText("Ajustes").assertIsDisplayed()
         compose.onNodeWithTag("telemetry-source").assertIsDisplayed()
         compose.onNodeWithTag("voice-status").assertIsDisplayed()
+        val ptt = compose.onNodeWithTag("push-to-talk").fetchSemanticsNode().boundsInRoot
+        val settings = compose.onNodeWithText("Ajustes").fetchSemanticsNode().boundsInRoot
+        assertTrue("PTT and settings must not overlap", ptt.right <= settings.left || settings.right <= ptt.left ||
+            ptt.bottom <= settings.top || settings.bottom <= ptt.top)
         compose.onNodeWithTag("dashboard").performScrollToNode(hasTestTag("widget-system_status"))
         compose.onNodeWithTag("widget-device-lab").assertExists()
     }
