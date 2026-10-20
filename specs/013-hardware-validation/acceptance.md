@@ -1,7 +1,9 @@
-# Aceptación (borrador)
+# Aceptación
 
-1. Al menos un adaptador ELM327 Classic y un vehículo detenidos completan conexión, descubrimiento, lectura, `NO DATA` si procede, desconexión y retorno al simulador; se registra el modelo exacto. Si no hay hardware, el criterio queda `NOT_RUN`.
-2. Se documentan permisos revocados, Bluetooth apagado, timeout y reconexión en al menos un teléfono físico compatible.
-3. Las pruebas de voz miden respuesta escrita ante fallo TTS y comportamiento de audio focus/STT con motor real, indicando idioma y motor instalado.
-4. El proveedor LLM real se ensaya con consentimiento de texto, credencial de prueba y sin telemetría; los resultados de herramientas no aparecen en solicitudes remotas.
-5. CI sigue sin requerir vehículo, adaptador, voz ni token.
+1. Device Lab abre desde Ajustes, ejecuta pruebas pasivas sin hardware, muestra resultados tipados con fecha/duración y permite borrar historial.
+2. Voz, Bluetooth, OBD e IA generan observaciones distinguibles sin afirmar verificación física ni calidad acústica por disponibilidad o callback.
+3. La prueba de red y la acústica requieren acción explícita. El vehículo solo se conecta después del diálogo existente de entorno detenido.
+4. El harness offline cubre fallos de permiso, transporte, parser, timeout, reconexión, simulador y redacción. CI no requiere token ni vehículo.
+5. Builds y lint pasan; la APK debug y su SHA-256 se registran junto a los resultados ejecutados.
+6. Las filas físicas no ejecutadas conservan `PENDING`, incluidas voz es-ES, ELM327 Classic, vehículo detenido, proveedor real, MediaSession, Maps/Waze y contactos de laboratorio. No bloquean la entrega de infraestructura.
+7. No hay escritura vehicular, telemetría externa, escucha continua ni secretos en registros.

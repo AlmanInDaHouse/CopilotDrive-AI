@@ -12,3 +12,6 @@ En emulador API 35 se comprobó el permiso Nearby devices y la indicación «No 
 ## Validación física pendiente
 
 Registrar modelo de teléfono y Android, fabricante y firmware del adaptador, vehículo, emparejamiento, permiso, conexión, latencia, PIDs anunciados, desconexión y reconexión. En el mismo dispositivo comprobar STT/TTS, audio focus, proveedor de voz real, consultas locales sin Internet, fallo de TTS con respuesta escrita y confirmación del marcador. No ejecutar estas pruebas automáticamente ni considerar los fakes como prueba de interoperabilidad física.
+# Observabilidad Sprint 4
+
+Desde Ajustes → Laboratorio del dispositivo, «Comprobar Bluetooth y emparejamiento» solo inspecciona disponibilidad y dispositivos ya emparejados; no abre un socket. Para la prueba activa, vuelve a Ajustes y confirma «Conectar» únicamente con vehículo detenido. El historial registra intento RFCOMM, inicialización ELM, PIDs, lectura disponible/ausente, timeout, reconexión y cierre intentado. La duración es monotónica. `PASS` técnico y dispositivo emparejado no constituyen verificación contra adaptador o coche; completa `PHYSICAL_VALIDATION_MATRIX.md` con una observación manual.\n

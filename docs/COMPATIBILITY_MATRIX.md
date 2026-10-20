@@ -31,3 +31,6 @@ Demus no se considera aplicaciÃ³n Android disponible sin comprobaciÃ³n. No s
 
 En esta versión, la compatibilidad real de un reproductor depende de la sesión Android detectada, sus
 controles publicados y el acceso concedido. No hay una lista fija de paquetes multimedia admitidos.
+# Sprint 4 — evidencia de compatibilidad
+
+Los estados de hardware y proveedores reales figuran en `PHYSICAL_VALIDATION_MATRIX.md`. Una API presente, un permiso concedido, un fake aprobado o una prueba de emulador no acreditan compatibilidad física. Para cada modelo de teléfono/adaptador/vehículo se requiere acta manual ligada a commit y SHA-256. Hasta entonces: `PENDING`.\n

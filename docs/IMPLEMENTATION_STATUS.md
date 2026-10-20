@@ -1,5 +1,15 @@
 # Estado de implementación — Sprint 3 local
 
+## Sprint 4 — rama `feat/sprint4-hardware-validation`
+
+**IMPLEMENTED:** Laboratorio Compose desde Ajustes; checks pasivos tipados, StateFlow, historial temporal/redactado y borrado; eventos OBD por etapa con duración monotónica; prueba TTS y prueba IA tras confirmación; contrato futuro de consentimiento vehicular separado y desactivado. El proveedor mantiene respuestas locales sin clave y conserva el texto ante fallo TTS.
+
+**AUTOMATED_TESTED:** 12 Python, 62 JVM y 14 instrumentadas aprobadas; 88/88 en total. Lint 0 errores. Consultar `TEST_RESULTS.md` para comandos y resultados.
+
+**EMULATOR_TESTED:** Android 15/API 35, 14/14 tests; apertura del laboratorio, checks pasivos y borrado, Jarvis local, simulador, Keystore, MediaSession y HTTP loopback. Consultar `TEST_RESULTS.md`.
+
+**PHYSICALLY_VERIFIED:** ninguno en Sprint 4. **PENDING:** interoperabilidad real de teléfono/voz, adaptador, coche, IA remota, reproductores, Maps/Waze y contactos. Matriz: `PHYSICAL_VALIDATION_MATRIX.md`.
+
 Sprint 2 se fusionó en `origin/main` `74507bb` mediante PR #3. `feat/sprint3-bluetooth-obd` se rebasó sobre ese commit con respaldo local. Sprint 3 implementa RFCOMM Bluetooth Classic, descubrimiento 0100/0120, cuatro lecturas permitidas, reconexión acotada, selector de emparejados y estado en dashboard/Jarvis. El simulador sigue funcionando sin adaptador. Build APK, lint, 57 pruebas JVM, 12 Python y 12 instrumentadas pasaron; no hay prueba física de ELM327. Informe: `SPRINT3_REPORT.md`.
 
 ## Histórico Sprint 2

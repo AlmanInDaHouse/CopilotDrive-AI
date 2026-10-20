@@ -1,7 +1,14 @@
-# Plan de pruebas (borrador)
+# Plan de pruebas
 
-- Preparar banco con vehículo inmóvil y adaptador emparejado. Capturar tiempos y respuestas normalizadas sin identificadores. Repetir en Android 8, 12 y 15 cuando haya dispositivos disponibles; registrar explícitamente niveles no probados.
-- Probar PIDs soportados y ausentes, eco, `NO DATA`, respuesta parcial, pérdida de enlace, apagado de Bluetooth, revocación de permiso, cancelación, reconexión limitada y cambio al simulador.
-- Probar STT/TTS es-ES con y sin voz instalada, pérdida de audio focus y fallo TTS; comprobar que queda texto. No activar escucha permanente.
-- Probar proveedor local y remoto consentido con 200, 401, 429, timeout y TLS; inspeccionar solicitudes para excluir telemetría y secretos en logs.
-- Mantener las pruebas fake/JVM, instrumentadas y Python como gate previo. Publicar evidencia física solo después de ejecutarla.
+## Automatizadas offline
+
+- Python unittest y `check_repository.py`: prototipo, fixture y reglas de seguridad.
+- JVM core: límites del historial, redacción MAC/VIN/token, consentimiento vehicular y TTL.
+- JVM testing: parser ELM con eco, ruido/fragmentos inválidos y `NO DATA`; permisos revocados, radio ausente, reconexión, cancelación, datos obsoletos y retorno al simulador; comprobar eventos OBD y evidencia `PENDING`.
+- Android unit: presentación existente.
+- Instrumentación emulador: onboarding, consulta local con respuesta escrita, navegación Ajustes → Device Lab → checks pasivos → borrado. HTTP loopback, MediaSession y Keystore existentes. `PASS` emulador solo demuestra ese entorno.
+- `:app:lintDebug`, `:app:assembleDebug`, `:app:assembleDebugAndroidTest`, firma y SHA-256; `git diff --check`.
+
+## Manuales separados
+
+Seguir `docs/PHYSICAL_VALIDATION_MATRIX.md` y `docs/DEVICE_LAB_PROCEDURE.md`. Probar teléfono Android con STT/TTS local es-ES; ELM327 Classic y vehículo detenido; endpoint Chat Completions real con cuota; reproductor MediaSession; Maps/Waze; contactos de laboratorio. Registrar cada precondición, intento, observación, evidencia y lo pendiente. Nunca convertir una prueba definida en resultado ejecutado.
