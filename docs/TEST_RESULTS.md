@@ -1,6 +1,54 @@
 # Resultados ejecutados — 2026-10-20
 
-## Sprint 6 — rama local `feat/sprint6-custom-dashboard`
+## Sprint 7 — rama local `feat/sprint7-device-qualification`
+
+Base `1328077ff16d6487b4be995aae474dfc8452d345`, Sprint 6/PR #7 fusionada.
+Workflows del merge comprobados por GitHub API: Android y Tests success; no son
+CI de Sprint 7. Código/APK final: `eb6fe096e00a959b8215b63c249e751b12682d40`.
+Documentación posterior no modifica entradas del APK.
+
+| Suite | Baseline de esta sesión | Sprint 7 final | Fallos/omitidas final |
+|---|---:|---:|---:|
+| Python unittest | 12 | 23 | 0/0 |
+| core JVM | 33 | 38 | 0/0 |
+| testing JVM | 56 | 64 | 0/0 |
+| app unit | 6 | 6 | 0/0 |
+| Instrumentación API35 | 23 | 30 | 0/0 |
+| Total de casos distintos | 130 | 161 | 0/0 |
+
+Los tests Gradle no modificados pueden aparecer UP-TO-DATE; no se han sumado
+repeticiones al total. XML bajo android/**/build/test-results y
+android/app/build/outputs/androidTest-results/connected/debug. Python final:
+artifacts/sprint7/python-tests.log. Resumen XML: artifacts/sprint7/test-summary.json.
+
+Comandos: `python -m unittest discover -s tests -v`, `python scripts/check_repository.py`,
+`git diff --check`; `scripts/android.ps1 :core:test :testing:test :app:testDebugUnitTest
+:app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest`; con ANDROID_SERIAL
+del emulador, `scripts/android.ps1 :app:connectedDebugAndroidTest`.
+Build/lint/ambos APK: BUILD SUCCESSFUL. Lint: 0 errores, 12 avisos existentes.
+
+Regresiones nuevas: invariantes de evidencia/hash/API y percentiles; autorización,
+dry-run, redacción y restauración del runner; STT/focus/cancelación/limpieza/TTS
+sin perder respuesta; revocación de Places durante ubicación y fallo tardío;
+nombres/estados/objetivos/diálogo/back en Compose; fuentes 2×/vertical/paisaje corto.
+Suites existentes de LayoutEngine, DataStore, Jarvis, Keystore, MediaSession,
+navegación, Places, OBD, Device Lab, privacidad y PolicyEngine siguen pasando.
+
+Una ejecución redirigida fue interrumpida por el aviso SDK XML v4/v3 convertido en
+NativeCommandError por PowerShell 5, sin resultado aprobado. Wrapper reparado:
+stderr se conserva como texto y manda exit code nativo. Compilación repetida con
+éxito; prueba negativa :app:qualificationTaskDoesNotExist devolvió 1 como debe.
+No se desactivaron tests ni reglas. El fallo intencional no es un fallo de la suite.
+
+Smokes adicionales, sin sumarlos a 161: editor completo adb, matriz de 11 displays,
+persistencia por force-stop y muestreo de rendimiento. Evidencia exacta, red/offline,
+rotación y APK en SPRINT7_REPORT/PERFORMANCE_BASELINE. No hardware ni TalkBack humano.
+
+SHA-256 APK debug Sprint 7:
+`F85A4C1252A5C8A700171CBBF8CFA2BEFBCEA33CB5FAF093C1EA8D03030F0D01`.
+Firma Android Debug válida, minSdk26/target35; no APK release.
+
+## Sprint 6 — evidencia histórica de la rama fusionada por PR #7
 
 Base canónica `2099b9d` verificada por fetch; main sincronizado por fast-forward.
 Baseline aislado sobre esa base: Python **12/12**, core **17/17**, testing **56/56**,

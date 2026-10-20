@@ -23,6 +23,8 @@ data class PairedObdDevice(val address: String, val name: String)
 class AndroidBluetoothObd(private val context: Context) : BluetoothTransport {
     private val adapter: BluetoothAdapter? get() = context.getSystemService(BluetoothManager::class.java)?.adapter
     private val worker = Executors.newSingleThreadExecutor()
+    private val socketLock = Any()
+    private var generation = 0L
     @Volatile private var socket: BluetoothSocket? = null
 
     @SuppressLint("MissingPermission")
@@ -41,16 +43,26 @@ class AndroidBluetoothObd(private val context: Context) : BluetoothTransport {
     }
 
     @SuppressLint("MissingPermission")
-    override suspend fun open(deviceAddress: String) = blocking {
+    override suspend fun open(deviceAddress: String) {
+        close()
+        val expected = synchronized(socketLock) { generation }
+        blocking {
         if (!permitted()) throw SecurityException("Bluetooth permission required")
         val radio = adapter ?: throw IOException("Bluetooth no disponible")
         if (!radio.isEnabled) throw IOException("Bluetooth apagado")
-        close()
         val device = radio.getRemoteDevice(deviceAddress)
         if (device.bondState != android.bluetooth.BluetoothDevice.BOND_BONDED) throw IOException("Adaptador no emparejado")
         val candidate = device.createRfcommSocketToServiceRecord(SPP_UUID)
-        socket = candidate
+        synchronized(socketLock) {
+            // Cancellation may happen before a blocking worker has created its socket.
+            if (generation != expected) {
+                candidate.close()
+                throw IOException("OBD connection cancelled")
+            }
+            socket = candidate
+        }
         candidate.connect()
+        }
     }
 
     override suspend fun exchange(request: ObdWireRequest): String = blocking {
@@ -69,8 +81,7 @@ class AndroidBluetoothObd(private val context: Context) : BluetoothTransport {
     }
 
     override fun close() {
-        val old = socket
-        socket = null
+        val old = synchronized(socketLock) { generation++; socket.also { socket = null } }
         try { old?.close() } catch (_: IOException) { }
     }
 
@@ -79,6 +90,7 @@ class AndroidBluetoothObd(private val context: Context) : BluetoothTransport {
     private suspend fun <T> blocking(action: () -> T): T = suspendCancellableCoroutine { continuation ->
         continuation.invokeOnCancellation { close() }
         worker.execute {
+            if (!continuation.isActive) return@execute
             try {
                 val value = action()
                 if (continuation.isActive) continuation.resume(value)

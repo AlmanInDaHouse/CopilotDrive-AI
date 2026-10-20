@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import ai.copilotdrive.app.DashboardState
@@ -60,17 +61,22 @@ fun DashboardEditor(state: DashboardState, customization: DashboardCustomization
                             Text("${if (widget.visibility == WidgetVisibility.VISIBLE) "Visible" else "Oculta"} · ${sizeLabel(widget.size)} · ${widget.placement.column}, ${widget.placement.row}", color = Muted)
                             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 OutlinedButton(onClick = { onChange { move(widget.id, -1) } }, enabled = !customization.saving && draft.widgets.first() != widget,
-                                    modifier = Modifier.weight(1f).heightIn(min = 56.dp).testTag("move-up-${widget.id}")) { Text("Subir") }
+                                    modifier = Modifier.weight(1f).heightIn(min = 56.dp).testTag("move-up-${widget.id}").semantics { contentDescription = "Subir ${definition.title}" }) { Text("Subir") }
                                 OutlinedButton(onClick = { onChange { move(widget.id, 1) } }, enabled = !customization.saving && draft.widgets.last() != widget,
-                                    modifier = Modifier.weight(1f).heightIn(min = 56.dp).testTag("move-down-${widget.id}")) { Text("Bajar") }
+                                    modifier = Modifier.weight(1f).heightIn(min = 56.dp).testTag("move-down-${widget.id}").semantics { contentDescription = "Bajar ${definition.title}" }) { Text("Bajar") }
                             }
                             definition.sizes.forEach { size ->
                                 OutlinedButton(onClick = { onChange { resize(widget.id, size) } }, enabled = !customization.saving && size != widget.size,
-                                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("resize-${widget.id}-$size")) { Text(sizeLabel(size)) }
+                                    modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("resize-${widget.id}-$size").semantics {
+                                        contentDescription = "${definition.title}: ${sizeLabel(size)}"
+                                        stateDescription = if (size == widget.size) "Tamaño actual" else "Cambiar tamaño"
+                                    }) { Text(sizeLabel(size)) }
                             }
                             val canHide = widget.visibility == WidgetVisibility.HIDDEN || draft.widgets.count { it.visibility == WidgetVisibility.VISIBLE } > 1
                             OutlinedButton(onClick = { onChange { if (widget.visibility == WidgetVisibility.VISIBLE) hide(widget.id) else add(widget.type) } },
-                                enabled = !customization.saving && canHide, modifier = Modifier.heightIn(min = 56.dp).testTag("toggle-${widget.id}")) {
+                                enabled = !customization.saving && canHide, modifier = Modifier.heightIn(min = 56.dp).testTag("toggle-${widget.id}").semantics {
+                                    contentDescription = "${if (widget.visibility == WidgetVisibility.VISIBLE) "Ocultar" else "Mostrar"} ${definition.title}"
+                                }) {
                                 Text(if (widget.visibility == WidgetVisibility.VISIBLE) "Ocultar" else "Mostrar")
                             }
                         }

@@ -1,7 +1,7 @@
 # Limitaciones conocidas
 
-Base Sprint 6: Sprint 5 fusionado por PR #6, main `2099b9d`. La rama Sprint 6 solo
-es local; evidencia de este incremento en `SPRINT6_REPORT.md`, sin CI remoto propio.
+Base Sprint 7: Sprint 6 fusionado por PR #7, main `1328077`; CI Android/Python del
+merge aprobado. Sprint 7 permanece local sin CI remoto propio; ver `SPRINT7_REPORT.md`.
 
 | Área | Limitación e impacto | Próxima validación/cambio |
 |---|---|---|
@@ -19,12 +19,30 @@ es local; evidencia de este incremento en `SPRINT6_REPORT.md`, sin CI remoto pro
 | POI | Google Places opcional y demo; sin consulta comercial/GPS físico validado | Clave restringida, ubicación y cuotas en proyecto de prueba |
 | Estado de conducción | UNKNOWN; confirmar entorno de prueba no certifica PARKED | Fuente fiable antes de funciones avanzadas |
 | UI | Editor de widgets disponible solo en laboratorio explícito y temporal; sin drag-and-drop, se usan botones | Hardware físico y escalas de fuente extremas pendientes; resoluciones reales ejecutadas en SPRINT6_REPORT.md |
-| Distribución | APK Sprint 6 debug firmado localmente; sin release ni CI remoto de la rama | CI tras autorización de push; firma de producción fuera del repositorio |
+| Distribución | APK Sprint 7 debug firmado localmente; sin release ni CI remoto de Sprint 7 | CI tras autorización de push; firma de producción fuera del repositorio |
 | Dependencias | Versiones estables fijadas, avisos de actualización de lint; no auditoría CVE exhaustiva | Auditoría y renovación controlada de la matriz |
 | Python heredado | Servidor local sin auth; LLM opcional envía métricas y texto según README original | Mantener en localhost; puente Android futuro requiere nuevo diseño de consentimiento |
 
 Los fakes prueban contratos, no disponibilidad de servicios de terceros. Ver TEST_RESULTS.md para qué
 se ejecutó realmente. No se debe convertir una especificación o una prueba definida en una afirmación de soporte.
+
+## Sprint 7 — alcance comprobado
+
+Solo emulador Android 15/API35 conectado. Ningún teléfono físico, ELM327/coche ni
+TalkBack ensayado. Los contratos y el runner distinguen evidencia; no hay certificación
+física cerrada. Semántica automatizada no equivale a lector de pantalla humano.
+Las carreras nativas STT/TTS/socket se han endurecido por inspección de código,
+compilación y regresiones de contratos; OEM, micrófono/acústica y RFCOMM requieren hardware.
+
+Arranque/PSS y cota superior de dashboard se documentan en PERFORMANCE_BASELINE.
+Debug/emulador, proceso frío con cachés calientes: sin equivalencia a release o teléfono.
+No TTFD exacto, FPS, energía, recomposiciones o percentiles de voz con muestras insuficientes.
+Persistencia tras force-stop no equivale a restauración por LMK de Android. No se
+ha medido una campaña prolongada de horas ni todas las combinaciones de insets/fuente.
+El runner físico requiere confirmación humana y flags; los flags por sí solos no
+constituyen consentimiento. No exporta pantalla, conversaciones ni identificadores.
+La señal SIGKILL/corte de energía puede impedir finally; revisar/restaurar manualmente
+si el host se cierra abruptamente durante una matriz de display en emulador.
 # Sprint 4 — límites actuales
 
 El Device Lab informa disponibilidad y resultados técnicos. Sus checks no certifican micrófono, voz audible, RFCOMM físico, lectura del coche ni compatibilidad comercial. El nivel de evidencia permanece `PENDING` en la app; las observaciones físicas se documentan manualmente. No existe exportación de diagnóstico ni memoria persistente de resultados. p50/p95 de voz requieren al menos 20 muestras por etapa y no representan calidad acústica.

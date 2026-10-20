@@ -1,31 +1,34 @@
-# Próximo sprint recomendado — interoperabilidad física
+# Sprint 8 priorizado — pruebas físicas consentidas
 
-## Después de Sprint 6
+Sprint 6 se fusionó por PR #7 en main `1328077ff16d6487b4be995aae474dfc8452d345`.
+Android y Tests del merge: success. Sprint 7 está en rama local
+`feat/sprint7-device-qualification`; revisar SPRINT7_REPORT, TEST_RESULTS,
+ACCESSIBILITY_AUDIT, PERFORMANCE_BASELINE y DEVICE_QUALIFICATION antes de publicar.
+No se ha ejecutado push, merge ni release de Sprint 7.
 
-El dashboard modular y el editor de laboratorio están implementados; véase
-`SPRINT6_REPORT.md` y `DASHBOARD_CUSTOMIZATION.md`. Sprint 7 recomendado: validar
-pantallas Android físicas con densidades/fuentes/barras concretas, accesibilidad con
-TalkBack y los flujos de guardar/cancelar/rotar/segundo plano. Completar la matriz
-física existente para OBD, voz acústica, GPS, reproductores y Maps/Waze instalados.
-Medir recomposiciones/consumo con herramientas fiables antes de fijar objetivos de FPS.
-No abrir edición en conducción ni añadir tools de layout al LLM. Mantener UNKNOWN
-como desconocido y la confirmación de laboratorio como declaración temporal.
+1. **P0, teléfono autorizado:** descubrimiento pasivo, confirmación humana antes de
+   instalar/hacer pruebas activas; API/modelo y APK exactos. TalkBack manual con
+   fuente ampliada, permisos, respuesta larga y editor; voz es-ES audible con
+   confirmación del usuario. Interrupción/retorno de audio focus y segundo plano.
+2. **P0, ELM327 y coche detenido autorizados:** emparejamiento, RFCOMM, inicialización,
+   PIDs, NO DATA, respuesta parcial, timeout, permiso revocado, reconexión y simulador.
+   Comparar solo lecturas permitidas, sin VIN, MAC completa ni comandos libres.
+3. **P1, rendimiento en teléfono:** repetir muestras bajo condiciones estables;
+   preparar variante benchmark cercana a release y Macrobenchmark si se necesita
+   TTFD/frame timing comparable. Medir recomposiciones, ciclos de navegación,
+   memoria sostenida y energía antes de fijar presupuestos. No extrapolar emulador.
+4. **P1, servicios opcionales:** configurar proyecto/cuota/consentimiento separado
+   de costes para IA y Google Places. Probar HTTPS/401/429/5xx/cancelación/red y
+   ubicación coarse/revocación. Fakes/loopback no prueban producción comercial.
+5. **P1, interoperabilidad:** reproductores autorizados y callbacks MediaSession,
+   GPS, Maps/Waze instalados y contactos ficticios. Un intent no acredita ruta/ETA.
+6. **P2, recuperación OEM:** LMK real, permisos revocados por Android, varias APIs
+   desde minSdk26 y densidades/insets físicos. Corregir solo fallos reproducidos.
 
-La rama `feat/sprint6-custom-dashboard` permanece local. Para PR: revisar commits y
-evidencia, autorizar push, ejecutar `git push -u origin feat/sprint6-custom-dashboard`,
-crear PR hacia main con el resumen de SPRINT6_REPORT y esperar Android/Python CI.
-Push, merge y release requieren autorización; no se han realizado en Sprint 6.
+Mantener UNKNOWN como desconocido, edición solo de laboratorio y contexto vehicular
+excluido de IA. No añadir escucha permanente, servicio de micrófono ni tools de layout.
 
-Sprint 4 implementa la infraestructura de diagnóstico. `SPRINT4_REPORT.md` contiene resultados ejecutados; `PHYSICAL_VALIDATION_MATRIX.md` conserva cada integración física sin probar como `PENDING`.
-
-1. Ejecutar `DEVICE_LAB_PROCEDURE.md` en teléfonos Android concretos con voz local es-ES. Anotar motor, voz, permisos, STT, silencio, cancelación, audio focus, callback TTS y confirmación audible. Repetir en al menos dos fabricantes o versiones de Android cuando haya equipos.
-2. Probar un ELM327 Bluetooth Classic compatible con vehículo detenido en banco controlado. Registrar RFCOMM, inicialización, PIDs, lecturas y `NO DATA`, timeout, revocación, desconexión, reconexión y retorno al simulador. Mantener exclusivamente el conjunto de solicitudes de solo lectura.
-3. Ensayar un endpoint Chat Completions real de forma opcional con clave de prueba y cuota. Documentar 200, 401, 429, 5xx, timeout, cancelación, JSON, texto y tool calling cuando el proveedor lo admita. No guardar credenciales ni prompts sensibles.
-4. Validar MediaSession con reproductores instalados, intents Maps/Waze y contactos ficticios en un dispositivo físico. Registrar callbacks observados sin afirmar que una acción externa haya concluido por abrir un intent.
-5. Reparar las incompatibilidades reproducidas y repetir la matriz ligada al SHA-256 del APK. Considerar el envío de contexto vehicular solo en una revisión posterior, con consentimiento específico, minimización, TTL y revocación implementados.
-
-Antes de publicar una PR, repetir Python, JVM, Android unit/instrumentación, lint, `check_repository.py`, `git diff --check`, firma y SHA-256. El push, merge y release requieren autorización separada.
-
-## Después de Sprint 5
-
-Configurar una clave Android restringida, facturación y límites de Google Places en un proyecto de prueba; verificar búsqueda real, atribuciones, cuotas y errores con dispositivo concreto. Ensayar permiso aproximado y revocación, Maps/Waze instalados y GPS en laboratorio detenido. Completar por separado la matriz física OBD y voz de `PHYSICAL_VALIDATION_MATRIX.md`. No declarar ruta activa ni ETA por un intent aceptado. Véanse `PLACES_PROVIDER_SETUP.md` y `SPRINT5_REPORT.md`.
+Publicar PR solo después de autorización explícita: revisar diff y commits contra
+main, ejecutar suites/firma/hash, push de la rama, abrir PR a main con SPRINT7_REPORT
+y esperar ambos workflows de la nueva rama. El CI del merge de Sprint 6 no es CI
+de Sprint 7. Merge y release requieren decisiones independientes posteriores.

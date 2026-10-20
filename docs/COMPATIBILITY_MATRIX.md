@@ -33,4 +33,22 @@ En esta versión, la compatibilidad real de un reproductor depende de la sesión
 controles publicados y el acceso concedido. No hay una lista fija de paquetes multimedia admitidos.
 # Sprint 4 — evidencia de compatibilidad
 
+## Sprint 7 — calificación por entorno y escenario
+
+| Entorno/componente | Resultado | Alcance |
+|---|---|---|
+| Windows, JDK17, SDK/build-tools35 | AUTOMATED_TESTED | Build/lint/firma; no certificación de teléfono |
+| Kotlin core/harness, Python, DataStore | AUTOMATED_TESTED | Suites locales, fallos de proveedores y privacidad |
+| Android15/API35 x86_64 | EMULATOR_TESTED | Dashboard/editor/Device Lab/Places demo/IA loopback/Keystore/MediaSession de prueba |
+| Fuentes/pantallas emuladas | EMULATOR_TESTED | Matriz exacta y limitaciones en SPRINT7_REPORT |
+| STT/TTS instalados | UNSUPPORTED o PENDING por capacidad | Sin motor local es-ES/TalkBack útil observado; no acústica verificada |
+| Pantallas físicas, TalkBack, STT/TTS acústico | PENDING | Sin dispositivo físico conectado |
+| Bluetooth Classic ELM327 y coche | PENDING | Harness aprobado; ninguna conexión física iniciada |
+| IA comercial y Google Places con cuota | PENDING | No configurados/autorizados; no solicitudes comerciales |
+| GPS/Maps/Waze/reproductores físicos | PENDING | No prueba OEM/comercial |
+
+El minSdk26 declara instalabilidad mínima, no prueba de todas las APIs26–35.
+El runner no puede emitir PHYSICALLY_VERIFIED. No Android Auto, AAOS ni CarPlay.
+Contrato de estados/métodos/procedencia en DEVICE_QUALIFICATION; matriz física separada.
+
 Los estados de hardware y proveedores reales figuran en `PHYSICAL_VALIDATION_MATRIX.md`. Una API presente, un permiso concedido, un fake aprobado o una prueba de emulador no acreditan compatibilidad física. Para cada modelo de teléfono/adaptador/vehículo se requiere acta manual ligada a commit y SHA-256. Hasta entonces: `PENDING`.\n

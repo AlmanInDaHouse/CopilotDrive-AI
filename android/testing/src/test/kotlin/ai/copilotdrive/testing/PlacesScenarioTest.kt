@@ -2,10 +2,35 @@ package ai.copilotdrive.testing
 
 import ai.copilotdrive.core.*
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.runCurrent
+import kotlinx.coroutines.test.advanceUntilIdle
 import org.junit.Assert.*
 import org.junit.Test
 
 class PlacesScenarioTest {
+    @Test fun `revocation while obtaining location prevents any provider request`() = runTest {
+        val deferred = kotlinx.coroutines.CompletableDeferred<LocationSnapshot>()
+        val delayedLocation = object : LocationProvider { override suspend fun current() = deferred.await() }
+        val places = PlacesController(delayedLocation, provider, navigation, clock, { consent }, { permitted }, { true }, { stopped })
+        val job = launch { places.search(PlaceCategory.RESTAURANT) }
+        runCurrent()
+        consent = false
+        deferred.complete(location.snapshot)
+        advanceUntilIdle()
+        assertEquals(0, provider.calls)
+        assertEquals("CONSENT_REQUIRED", places.state.value.status)
+        assertNull(places.state.value.location)
+        job.join()
+    }
+    @Test fun `late provider failure cannot overwrite cleared session`() = runTest {
+        val places = controller()
+        provider.onSearch = { places.clear() }
+        provider.error = PlacesProviderError("HTTP_503", "Failure")
+        assertEquals("CANCELLED", places.search(PlaceCategory.RESTAURANT).errorCode)
+        assertEquals("DEMO_READY", places.state.value.status)
+        assertNull(places.state.value.error)
+    }
     private val clock = DeterministicClock()
     private val location = FakeLocationProvider()
     private val provider = FakePlacesProvider()

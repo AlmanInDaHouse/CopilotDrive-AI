@@ -7,6 +7,8 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Build
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -25,10 +27,26 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 class AndroidSpeechRecognizer(private val context: Context, private val allowSystem: () -> Boolean,
     private val onReady: (Long) -> Unit = {}) : SpeechToTextProvider {
-    private var recognizer: SpeechRecognizer? = null
+    private val main = Handler(Looper.getMainLooper())
+    private class Session(val recognizer: SpeechRecognizer, val continuation: CancellableContinuation<String>) {
+        var closed = false // Main thread only, like SpeechRecognizer's API.
+    }
+    @Volatile private var session: Session? = null
+    private fun closeSession(active: Session) {
+        fun close() {
+            if (active.closed) return
+            active.closed = true
+            if (session === active) session = null
+            runCatching { active.recognizer.cancel() }
+            runCatching { active.recognizer.destroy() }
+            active.continuation.cancel()
+        }
+        if (Looper.myLooper() == Looper.getMainLooper()) close() else main.post { close() }
+    }
     fun localAvailable() = Build.VERSION.SDK_INT >= 31 && SpeechRecognizer.isOnDeviceRecognitionAvailable(context)
     fun available() = localAvailable() || SpeechRecognizer.isRecognitionAvailable(context)
 
@@ -38,11 +56,14 @@ class AndroidSpeechRecognizer(private val context: Context, private val allowSys
         if (!local && !allowSystem()) throw SecurityException("System recognition requires consent")
         check(available())
         cancel()
+        var owned: Session? = null
         try { suspendCancellableCoroutine { continuation ->
             val active = if (local) SpeechRecognizer.createOnDeviceSpeechRecognizer(context)
                 else SpeechRecognizer.createSpeechRecognizer(context)
-            recognizer = active
-            continuation.invokeOnCancellation { active.cancel(); active.destroy(); if (recognizer === active) recognizer = null }
+            val current = Session(active, continuation)
+            owned = current
+            session = current
+            continuation.invokeOnCancellation { closeSession(current) }
             active.setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(params: Bundle?) {
                     if (continuation.isActive) onReady(((System.nanoTime() - startedNs) / 1_000_000).coerceAtLeast(0))
@@ -77,9 +98,9 @@ class AndroidSpeechRecognizer(private val context: Context, private val allowSys
                 putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
                 putExtra(RecognizerIntent.EXTRA_PREFER_OFFLINE, true)
             })
-        } } finally { cancel() }
+        } } finally { owned?.let(::closeSession) }
     }
-    override fun cancel() { recognizer?.cancel(); recognizer?.destroy(); recognizer = null }
+    override fun cancel() { session?.let(::closeSession) }
 }
 
 data class InstalledVoice(val name: String, val label: String)
@@ -90,12 +111,17 @@ class AndroidTextToSpeech(context: Context) : TextToSpeechProvider {
     val voices = MutableStateFlow<List<InstalledVoice>>(emptyList())
     val status = MutableStateFlow("Inicializando motor TTS…")
     private var pending: Pair<String, CancellableContinuation<Unit>>? = null
+    private val main = Handler(Looper.getMainLooper())
+    private var closed = false
     var selectedVoice: String = ""
     var rate = 1f
     var pitch = 1f
 
     suspend fun initialize() = withContext(Dispatchers.Main.immediate) {
-        if (!ready.await()) { status.value = "Motor TTS ausente o falló la inicialización."; return@withContext }
+        if (closed || withTimeoutOrNull(5_000) { ready.await() } != true) {
+            status.value = "Motor TTS ausente, no responde o falló la inicialización."
+            return@withContext
+        }
         val language = engine.isLanguageAvailable(Locale.forLanguageTag("es-ES"))
         if (language < TextToSpeech.LANG_AVAILABLE) { status.value = "No hay datos de voz para es-ES. Instálalos desde Android."; return@withContext }
         voices.value = engine.voices.orEmpty().filter { it.locale.toLanguageTag().equals("es-ES", true) && !it.isNetworkConnectionRequired && "notInstalled" !in it.features.orEmpty() }
@@ -120,7 +146,8 @@ class AndroidTextToSpeech(context: Context) : TextToSpeechProvider {
     }
 
     override suspend fun speak(text: String) = withContext(Dispatchers.Main.immediate) {
-        check(ready.await())
+        initialize() // Installs listener before any utterance, including direct Device Lab calls.
+        check(!closed && voices.value.isNotEmpty()) { "TTS_NOT_READY" }
         val localVoices = engine.voices.orEmpty().filter { it.locale.toLanguageTag().equals("es-ES", true) && !it.isNetworkConnectionRequired && "notInstalled" !in it.features.orEmpty() }
         val voice = (if (selectedVoice.isBlank()) localVoices.firstOrNull() else localVoices.firstOrNull { it.name == selectedVoice })
             ?: error("No hay voz local es-ES seleccionada")
@@ -128,8 +155,17 @@ class AndroidTextToSpeech(context: Context) : TextToSpeechProvider {
         engine.setSpeechRate(rate.coerceIn(0.7f, 1.3f)); engine.setPitch(pitch.coerceIn(0.7f, 1.3f))
         suspendCancellableCoroutine<Unit> { continuation ->
             val id = UUID.randomUUID().toString()
-            synchronized(this@AndroidTextToSpeech) { pending?.second?.cancel(); pending = id to continuation }
-            continuation.invokeOnCancellation { engine.stop(); synchronized(this@AndroidTextToSpeech) { if (pending?.first == id) pending = null } }
+            stop()
+            synchronized(this@AndroidTextToSpeech) { pending = id to continuation }
+            continuation.invokeOnCancellation {
+                // A late cancellation of an old utterance must not stop its replacement.
+                main.post {
+                    val owns = synchronized(this@AndroidTextToSpeech) {
+                        if (pending?.first == id) { pending = null; true } else false
+                    }
+                    if (owns) engine.stop()
+                }
+            }
             if (engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, id) == TextToSpeech.ERROR) finish(id, IllegalStateException("TTS failed"))
         }
     }
@@ -139,7 +175,7 @@ class AndroidTextToSpeech(context: Context) : TextToSpeechProvider {
         val previous = synchronized(this) { pending.also { pending = null } }
         previous?.second?.cancel()
     }
-    fun close() { stop(); engine.shutdown() }
+    fun close() { closed = true; stop(); engine.shutdown() }
 }
 
 class AndroidAudioFocus(context: Context, private val onLoss: () -> Unit) : AudioFocusCoordinator {

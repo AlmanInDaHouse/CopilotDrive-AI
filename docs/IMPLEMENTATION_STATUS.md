@@ -1,4 +1,4 @@
-# Estado de implementación — Sprint 3 local
+# Estado de implementación — Sprint 7 local; Sprints 1–6 fusionados
 
 ## Sprint 4 — rama `feat/sprint4-hardware-validation`
 
@@ -84,3 +84,22 @@ Voz/PTT, respuesta completa, ajustes y origen vehicular permanecen en barra fija
 Sin nuevos permisos, proveedores, tools LLM ni conexiones por widget. Fuentes originales
 de MediaSession/OBD/Places/voz; no ETA ni cartografía inventadas. Referencia Sprint 5
 conservada en LegacyDashboardScreen. Evidencia final y límites en SPRINT6_REPORT.md.
+
+## Sprint 7 — calificación, accesibilidad y recuperación
+
+Base Sprint 6/PR #7 fusionada, main `1328077`, CI Android/Python aprobado. Sprint 7
+local: contratos de calificación con procedencia completa y prohibición de promover
+emulador a físico; runner Python con dry-run, confirmaciones separadas, APK/firma/hash,
+matriz restaurable, mediciones numéricas y exportación sin serial/pantalla/conversación.
+
+Corregidos nombres de controles accesibles, headings, estado del micrófono y acciones
+contextuales del editor. Voz conserva texto al cancelar/fallar audio, usa reloj monotónico
+y libera recursos independientes; STT/TTS evitan limpieza de sesiones reemplazadas.
+Device Lab TTS se cancela en background/antes de PTT. Socket OBD invalida apertura
+pendiente al cancelar. Places revalida consentimiento tras esperar ubicación y descarta
+fallos de generaciones antiguas. Sin nuevos permisos o herramientas de vehículo/LLM.
+
+Suites/mediciones reales y APK: SPRINT7_REPORT y TEST_RESULTS. No se han ejecutado
+servicios comerciales ni pruebas físicas; TalkBack/acústica/RFCOMM/vehículo/GPS y
+reproductores OEM siguen PENDING. Runner no emite PHYSICALLY_VERIFIED. No CI remoto,
+push, merge o release de la nueva rama.

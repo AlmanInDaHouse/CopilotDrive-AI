@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -134,7 +135,7 @@ fun DashboardCard(modifier: Modifier = Modifier, content: @Composable ColumnScop
     }
 }
 
-@Composable fun Eyebrow(text: String) { Text(text, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp, color = Mint) }
+@Composable fun Eyebrow(text: String) { Text(text, modifier = Modifier.semantics { heading() }, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp, color = Mint) }
 
 fun metricLabel(metric: Metric?): String {
     val value = metric?.value
@@ -150,7 +151,7 @@ internal fun VehicleCard(vehicle: VehicleSnapshot?, modifier: Modifier = Modifie
         Text(metricLabel(vehicle?.fuelLevelPercent), fontSize = if (compact) 30.sp else 40.sp, fontWeight = FontWeight.Light, color = Mint, modifier = Modifier.testTag("fuel-value"))
         val fuel = vehicle?.fuelLevelPercent
         val fraction = if (fuel?.availability in setOf(Availability.AVAILABLE, Availability.SIMULATED)) ((fuel?.value ?: 0.0) / 100).toFloat().coerceIn(0f, 1f) else 0f
-        LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp), color = Mint, trackColor = Color(0xFF2B3B34))
+        LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp).clearAndSetSemantics {}, color = Mint, trackColor = Color(0xFF2B3B34))
         MetricRow("Velocidad", metricLabel(vehicle?.speedKmh))
         MetricRow("RPM", metricLabel(vehicle?.engineRpm))
         MetricRow("Refrigerante", metricLabel(vehicle?.coolantTemperatureC))
@@ -164,7 +165,7 @@ internal fun VehicleCard(vehicle: VehicleSnapshot?, modifier: Modifier = Modifie
 }
 
 @Composable private fun MetricRow(name: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp).semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.SpaceBetween) {
         Text(name, color = Muted, fontSize = 14.sp, modifier = Modifier.weight(1f))
         Text(value, fontSize = 14.sp, modifier = Modifier.weight(1f))
     }
@@ -177,7 +178,7 @@ internal fun MediaCard(media: MediaSnapshot, artwork: Bitmap?, onMedia: (MediaCo
         Spacer(Modifier.height(18.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             if (artwork != null && !compact) {
-                Image(artwork.asImageBitmap(), contentDescription = "Carátula", contentScale = ContentScale.Crop, modifier = Modifier.size(68.dp).clip(RoundedCornerShape(12.dp)))
+                Image(artwork.asImageBitmap(), contentDescription = null, contentScale = ContentScale.Crop, modifier = Modifier.size(68.dp).clip(RoundedCornerShape(12.dp)))
             } else if (!compact) Canvas(Modifier.size(68.dp).background(Color(0xFF263B39), RoundedCornerShape(12.dp))) {
                 drawCircle(Mint.copy(alpha = 0.25f), size.minDimension * 0.36f, style = Stroke(2.dp.toPx()))
                 drawCircle(Mint.copy(alpha = 0.6f), size.minDimension * 0.24f, style = Stroke(2.dp.toPx()))

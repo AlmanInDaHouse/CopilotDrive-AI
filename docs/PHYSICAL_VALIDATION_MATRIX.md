@@ -1,6 +1,10 @@
-# Matriz de validación física — Sprint 4
+# Matriz de validación física — actualizada en Sprint 7
 
-Estado inicial de todas las filas: `PENDING`. No hay teléfono, adaptador, coche ni cuenta aportados en esta sesión. `IMPLEMENTED` y `AUTOMATED_TESTED` describen software; solo una observación manual documentada puede marcar `PHYSICALLY_VERIFIED`.
+Estado de todas las integraciones físicas: `PENDING`. Sprint 7 ejecutó adb devices -l:
+solo emulador Android 15/API35, modelo Android SDK built for x86_64. No teléfono,
+adaptador o coche conectado/autorizado. `IMPLEMENTED` y `AUTOMATED_TESTED` describen
+software; solo observación manual documentada puede marcar `PHYSICALLY_VERIFIED`.
+Evidencia de emulador, commit y SHA-256 en SPRINT7_REPORT; no se promueve esta matriz.
 
 | Integración | Intento y requisitos | Evidencia actual | Resultado observado | Pendiente |
 |---|---|---|---|---|
@@ -11,5 +15,14 @@ Estado inicial de todas las filas: `PENDING`. No hay teléfono, adaptador, coche
 | MediaSession | Reproductor instalado y autorizado | Emulador histórico | Sin ejecución física | Selección, pausa y callback del reproductor |
 | Maps/Waze | Apps instaladas, vehículo detenido | Intents/unit tests históricos | Sin ejecución física | Resolver y abrir destino sin afirmar ruta iniciada |
 | Contactos de laboratorio | Contacto ficticio, permiso, marcador | Fakes/unit tests históricos | Sin ejecución física | Desambiguación, confirmación nueva y ACTION_DIAL |
+| Pantalla, insets y fuente OEM | Teléfono/pantalla con APK exacto; consentimiento antes de instalar | Matriz de emulador Sprint 7 y tests Compose | PENDING físico | Controles esenciales, rotación, fuentes 1.5×/2×, editor, driver/laboratory |
+| TalkBack manual | Lector instalado y activado por usuario autorizado | Semántica Compose Sprint 7; TalkBack ausente en emulador | PENDING físico | Foco, headings, nombres, deshabilitados, diálogos y respuesta larga |
+| Google Places / GPS | Clave restringida, cuota y consentimiento separado de coste | Fakes/demo; carrera de revocación corregida | PENDING externo/físico | Ubicación coarse, revocación, categorías, errores y atribuciones reales |
 
-Para registrar una ejecución, copia una fila en un acta con: fecha, commit, APK SHA-256, Android/API y modelo, precondiciones, pasos, observación, nivel de evidencia, error/duración y lo no verificado. Identifica adaptador y firmware sin MAC completa; vehículo de forma anónima sin VIN ni matrícula. Usa `FAIL` solo si se intentó y falló; `UNSUPPORTED` si el entorno carece de capacidad. No conviertas una fila `PENDING` en `PASS` por la existencia de hardware.
+Para registrar una ejecución, copia una fila en un acta con: fecha, commit, APK SHA-256,
+Android/API y modelo, precondiciones, pasos, método, observación humana, nivel de
+evidencia, error/duración y lo no verificado. Identifica adaptador/firmware sin MAC;
+vehículo anónimo sin VIN/matrícula. Usa `FAILED` si se intentó y falló, `UNSUPPORTED`
+si falta capacidad, `BLOCKED` por requisito externo y `PENDING` sin ejecución.
+No convertir una fila PENDING en verificada por detectar hardware o recibir un callback.
+Ver DEVICE_QUALIFICATION para invariantes de contratos y confirmaciones antes de actividad.

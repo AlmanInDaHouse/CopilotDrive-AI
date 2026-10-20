@@ -10,6 +10,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -90,8 +91,11 @@ internal fun EssentialControls(state: DashboardState, onSettings: () -> Unit, on
                 else "OBD · ${state.vehicleConnection.name} · ${state.vehicle?.source ?: "Sin datos"}",
                 color = Amber, fontSize = 12.sp, modifier = Modifier.testTag("telemetry-source"))
             TextButton(onClick = { fullResponse = true }, contentPadding = PaddingValues(0.dp),
-                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("voice-status")) {
-                Text(if (microphone) "MICRÓFONO ACTIVO · ${state.voice.message}" else "${state.voice.message} · Leer respuesta",
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("voice-status").semantics {
+                    liveRegion = LiveRegionMode.Polite
+                    stateDescription = if (microphone) "Micrófono activo" else "Micrófono apagado"
+                }) {
+                Text(if (microphone) "MICRÓFONO ACTIVO · ${state.voice.message}" else "Micrófono apagado · ${state.voice.message} · Leer respuesta",
                     color = if (microphone) Amber else Muted, maxLines = 2, fontSize = 13.sp,
                     modifier = Modifier.weight(1f))
             }
@@ -185,7 +189,8 @@ private fun WidgetContent(widget: WidgetInstance, state: DashboardState, onMedia
         Text(voice.message, fontSize = 20.sp, modifier = Modifier.testTag("assistant-message").padding(vertical = 12.dp))
         voice.errorSource?.let { Text("Revisar $it", color = Amber) }
         Text("PTT y micrófono siempre en la barra inferior", color = Muted, fontSize = 12.sp)
-        OutlinedButton(onClick = onListen, enabled = !preview && voice.state !in setOf(VoiceState.LISTENING, VoiceState.SPEAKING),
+        OutlinedButton(onClick = onListen, enabled = !preview && voice.state !in setOf(VoiceState.LISTENING, VoiceState.TRANSCRIBING,
+            VoiceState.UNDERSTANDING, VoiceState.EXECUTING, VoiceState.SPEAKING),
             modifier = Modifier.heightIn(min = 56.dp)) { Text("Hablar con Jarvis") }
     }
 }

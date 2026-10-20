@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.*
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ai.copilotdrive.app.ui.*
@@ -23,7 +24,7 @@ fun DeviceLabScreen(model: DashboardViewModel, onBack: () -> Unit, onPlaces: () 
         modifier = Modifier.testTag("device-lab")) {
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Laboratorio del dispositivo", style = MaterialTheme.typography.headlineMedium)
+                Text("Laboratorio del dispositivo", modifier = Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
                 OutlinedButton(onClick = onBack) { Text("Volver") }
             }
             Text("Disponibilidad no equivale a funcionamiento verificado. Las pruebas físicas requieren intervención y vehículo detenido.", color = Muted)

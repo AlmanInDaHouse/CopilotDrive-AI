@@ -9,7 +9,7 @@ Keep the Python/web prototype functional. Android must work without Python or AP
 DataStore and Android adapters. Inject dependencies through constructors; no domain Android imports.
 Sprint 2 AI contracts, response validation and ephemeral conversation live in `android/core`;
 HTTP, Android Keystore and consent UI live in `android/app`.
-Specifications live in `specs/000-product` through `specs/012-widgets-future`.
+Specifications live in `specs/000-product` through `specs/014-device-qualification`.
 JSON schema version 1 uses epoch milliseconds, nullable metrics, explicit source and availability.
 
 ## Safety and privacy
@@ -59,3 +59,17 @@ in-flight writes are cancelled when safety is revoked. No layout tool exposed to
 Always retain fixed voice status/PTT, settings and telemetry-source indicator. Preserve
 LegacyDashboardScreen as the Sprint 5 reference. Execute DashboardLayoutTest before
 editor changes; record actual dp/resolution/fontScale evidence separately from hardware.
+
+Sprint 7: `DeviceQualification` reuses diagnostic EvidenceLevel and enforces build/API/model,
+preconditions, method and observation provenance. CompatibilityStatus is independent of
+availability; emulator/automated checks must never produce PHYSICALLY_VERIFIED. Manual
+physical observation requires an exact APK/commit acta. See specs/014-device-qualification.
+`scripts/qualify_android.py` is passive by default; use explicit serial and dry-run before
+active work. Physical installation/activity requires fresh human confirmation, then the
+separate allow flags. No data clear, reboot, audio/OBD/network tests or screenshots in runner.
+Display matrix is emulator-only and restores overrides/font/rotation in finally. Keep numeric
+samples in ignored artifacts; p50/p95 require 20 identical-condition observations.
+Voice cancellation preserves completed written answers; old STT/TTS cleanup must not close
+a new session. Device Lab speech is foreground/cancellable. Recheck Places consent after
+location suspension and before provider invocation. Run VoiceReliabilityTest, PlacesScenarioTest,
+DeviceQualificationTest and AccessibilityTest for changes at these boundaries.
