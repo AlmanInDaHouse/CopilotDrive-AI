@@ -1,7 +1,16 @@
 # Limitaciones conocidas
 
-Base Sprint 8: Sprint 7 fusionado por PR #8, main `328ffec`; CI Android/Python del
-merge aprobado. Sprint 8 permanece local sin CI remoto propio; ver `SPRINT8_REPORT.md`.
+Base Sprint 9: Sprint 8 fusionado por PR #9, main `504e9a7`; ambos workflows del
+merge terminaron success. Sprint 9 es trabajo local sin push; ver `SPRINT9_REPORT.md`.
+
+Sprint 9:34 instrumentadas por API26/30/35 en AVD oficial no certifican dispositivos
+OEM. Offline26 permanece bloqueado por svc wifi137; se conserva restauración
+observada de flags1/1 e intentos fallidos. Los45 tests Python y 116 JVM aprobaron.
+El jank en SwiftShader sigue alto; no se introdujeron optimizaciones especulativas
+de Compose. La lectura de permisos multimedia obsoleta en 26 sí se corrigió con
+regresión real. La campaña100+20 mostró referencias/tareas acotadas, pero host
+con poca RAM invalida atribuir una mejora a la caída PSS. No heap/dominadores,
+profiling por composable, audio físico ni certificación OEM. Ver informes Sprint 9.
 
 | Área | Limitación e impacto | Próxima validación/cambio |
 |---|---|---|
@@ -19,7 +28,7 @@ merge aprobado. Sprint 8 permanece local sin CI remoto propio; ver `SPRINT8_REPO
 | POI | Google Places opcional y demo; sin consulta comercial/GPS físico validado | Clave restringida, ubicación y cuotas en proyecto de prueba |
 | Estado de conducción | UNKNOWN; confirmar entorno de prueba no certifica PARKED | Fuente fiable antes de funciones avanzadas |
 | UI | Editor de widgets disponible solo en laboratorio explícito y temporal; sin drag-and-drop, se usan botones | Hardware físico y escalas de fuente extremas pendientes; resoluciones emuladas ejecutadas en SPRINT8_REPORT y TEST_RESULTS |
-| Distribución | APK Sprint 8 debug firmado localmente; sin release ni CI remoto de Sprint 8; debug incluye Activities de tooling/tests | CI tras autorización de push y revisión de variante de distribución; firma de producción fuera del repositorio |
+| Distribución | APK Sprint 9 debug firmado y probado en26/30/35; sin release; CI del merge Sprint 8 aprobado, Sprint 9 local; debug incluye Activities de tooling/tests | CI tras autorización de push y revisión de variante de distribución; firma de producción fuera del repositorio |
 | Dependencias | Versiones estables fijadas, avisos de actualización de lint; no auditoría CVE exhaustiva | Auditoría y renovación controlada de la matriz |
 | Python heredado | Servidor local sin auth; LLM opcional envía métricas y texto según README original | Mantener en localhost; puente Android futuro requiere nuevo diseño de consentimiento |
 
@@ -83,5 +92,5 @@ PERFORMANCE_COMPARISON. Sin conteo instrumentado de recomposiciones ni heap prof
 no se afirma eliminación de fugas. Un PSS creciente requiere investigación adicional.
 Los tiempos de operación del harness incluyen espera/scroll y son cotas externas.
 Debug contiene Activities de tooling/test-manifest; revisar variante de distribución
-antes de entregar a usuarios externos. Firmas de producción, release y CI remoto de
-Sprint8 pendientes; las verificaciones físicas requieren observación humana exacta.
+antes de entregar a usuarios externos. Firmas de producción y release pendientes;
+el CI del merge Sprint 8 aprobó. Las verificaciones físicas requieren observación humana exacta.

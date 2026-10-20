@@ -19,3 +19,8 @@
 | 015 | PerformanceReadinessTest, StabilityScenarioTest, StabilityJourneyTest, runners de estabilidad/benchmark y comparacion | Emulador no representa telefono; PSS no prueba fuga; benchmark no es test funcional |
 
 Los comandos, recuentos y resultados efectivos se mantienen en docs/TEST_RESULTS.md.
+
+Sprint 9/spec016: scripts jank_evidence/host_health/compatibility_android,
+test_jank_evidence, PlatformMediaTest y StabilityJourneyTest relacionan trazas,
+calificación API26/30/35, revocación y lifecycle. No prueban fluidez OEM ni ausencia
+de fugas; ver JANK_INVESTIGATION, MEMORY_INVESTIGATION y aceptación con bloqueos.

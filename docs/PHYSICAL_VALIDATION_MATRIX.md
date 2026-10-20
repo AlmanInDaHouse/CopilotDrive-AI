@@ -1,12 +1,14 @@
-# Matriz de validación física — actualizada en Sprint 8
+# Matriz de validación física — actualizada en Sprint 9
 
-Estado de todas las integraciones físicas: `PENDING`. Sprint 8 repitió descubrimiento ADB pasivo:
+Estado de todas las integraciones físicas: `PENDING`. Sprint 9 repitió descubrimiento ADB pasivo:
 solo emulador Android 15/API35, modelo Android SDK built for x86_64. No teléfono,
 adaptador o coche conectado/autorizado. `IMPLEMENTED` y `AUTOMATED_TESTED` describen
 software; solo observación manual documentada puede marcar `PHYSICALLY_VERIFIED`.
-Evidencia de emulador, commit y SHA-256 en SPRINT8_REPORT; no se promueve esta matriz.
+Evidencia de emulador, commit y SHA-256 en SPRINT9_REPORT; no se promueve esta matriz.
 Recorridos preparados por integración y requisitos de consentimiento en
-PHYSICAL_TEST_PROCEDURES.md. API26/30 y observaciones humanas siguen PENDING.
+PHYSICAL_TEST_PROCEDURES.md. API26/30/35 ejecutaron34 pruebas por versión en AVDs
+oficiales independientes; API26 offline permanece bloqueado por el comando Wi-Fi
+del sistema. Las observaciones humanas y toda verificación física siguen PENDING.
 
 | Integración | Intento y requisitos | Evidencia actual | Resultado observado | Pendiente |
 |---|---|---|---|---|

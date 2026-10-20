@@ -7,13 +7,15 @@ El prototipo Python/web se conserva y funciona por separado.
 **Versión experimental para laboratorio detenido.** No controla el vehículo. No es Android Auto, AAOS ni CarPlay.
 El movimiento del vehículo se considera desconocido; la velocidad del simulador no permite deducirlo.
 
-Sprint 7 está fusionado por PR #8; Sprint 8 permanece en rama local sin publicación.
-Evidencia actual, APK y pendientes físicos: [informe Sprint 8](docs/SPRINT8_REPORT.md).
+Sprint 8 está fusionado por PR #9 en main `504e9a7`, con Android y Tests aprobados.
+Sprint 9 se entrega localmente: 34 instrumentadas por API26/30/35, corrección de
+revocación multimedia en26 y forense de jank con límites del host documentados.
+Evidencia, APK y pendientes: [informe Sprint 9](docs/SPRINT9_REPORT.md).
 
 ### Probar Android
 
 1. Instala el APK debug generado en `android/app/build/outputs/apk/debug/app-debug.apk`.
-   La copia de Sprint 8 se entrega en `artifacts/sprint8/CopilotDrive-AI-sprint8-debug.apk` (no versionada).
+   La copia de Sprint 9 se entrega en `artifacts/sprint9/CopilotDrive-AI-sprint9-debug.apk` (no versionada).
 2. Abre **CopilotDrive AI** y completa el aviso inicial.
 3. Pulsa **Probar consulta**: se consulta combustible simulado (42 %) y se intenta TTS con una voz local instalada.
 4. Para voz real: **Ajustes → voz**. Si no hay reconocimiento local, autoriza expresamente el motor del sistema;

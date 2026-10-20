@@ -1,4 +1,27 @@
-# Estabilidad y recuperación — Sprint 8
+# Estabilidad y recuperación — Sprint 9
+
+APK `501b01a1…bc08d5c`, API35 AVD desechable. Se solicitaron 1536 MiB, elevados
+automáticamente por el emulador a 2560 MB. 100 ciclos sostenidos
+(draft, background/foreground, Settings, Device Lab, Places sin consulta y recreate)
+y 20 reinicios/rotaciones:330627 ms. Resultado funcional EMULATOR_TESTED;
+0 crashes y 0 ANR observados en el historial acotado exit-info. No garantía de
+ausencia de fallos fuera de esa ventana. Paquetes y hashes presentes al terminar;
+layout/pantalla/micrófono restaurados. Ningún data clear ni uninstall.
+
+PSS sostenido 154150→146935 KiB; referencias débiles a Activities anteriores1–3;
+10 jobs del ViewModel en las 100 muestras. La prueba de cierre canceló el scope en
+API26/30/35. Host final 302–346 MiB disponibles: los valores PSS permanecen como
+observación INCONCLUSIVE, sin afirmar mejora o ausencia de fuga. Datos separados
+de los 20 procesos reiniciados y detalles en MEMORY_INVESTIGATION.md.
+
+Suites34/34 por API26/30/35. Smoke de rotación/foreground ejecutado en las tres;
+offline con restauración verificada en 30/35. API26 offline BLOCKED: svc wifi137;
+se detuvieron los escenarios, se verificó red1/1 igual al original y se conservó
+la incidencia del AVD desechable. El primer intento no persistía flags originales;
+el runner ahora registra antes/después y espera transiciones. El AVD valioso
+estuvo detenido durante estas pruebas; fingerprints conservados en artifacts/sprint9.
+
+## Histórico — Sprint 8
 
 API35 emulado, APK C23F86E1B7DC7F3DEA05D9AF6E41374EF2B79A58D1227B302B7CA1AB12400EA2, código Android 259af8d. Runner activo opt-in y hash
 del APK/AndroidTest instalados comprobados.20 ciclos sostenidos (preset draft,

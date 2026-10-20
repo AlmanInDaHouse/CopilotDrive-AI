@@ -9,7 +9,7 @@ Keep the Python/web prototype functional. Android must work without Python or AP
 DataStore and Android adapters. Inject dependencies through constructors; no domain Android imports.
 Sprint 2 AI contracts, response validation and ephemeral conversation live in `android/core`;
 HTTP, Android Keystore and consent UI live in `android/app`.
-Specifications live in `specs/000-product` through `specs/015-performance-readiness`.
+Specifications live in `specs/000-product` through `specs/016-jank-compatibility`.
 JSON schema version 1 uses epoch milliseconds, nullable metrics, explicit source and availability.
 
 ## Safety and privacy
@@ -81,6 +81,24 @@ do not turn zero captured frames into zero jank. Preserve failed attempts.
 connectedDebugAndroidTest may uninstall the app/data when finished. For an emulator
 whose state must survive, use install -r and am instrument directly; connected CI
 tests belong on disposable AVDs. Record any preservation incident explicitly.
+
+Sprint 9: base is Sprint 8 merged by PR #9 at 504e9a7; both merge workflows passed.
+Use jank_evidence.py/jank_window.sql to clip target-thread slices to measureBlock.
+Inclusive wall slices overlap; guest Running is not exclusive physical-host CPU.
+FrameTimeline labels and PSS deltas are correlations, not causal/leak proof.
+Keep parse errors, failed attempts and absent metrics explicit; raw traces stay ignored.
+benchmark_android observes host memory/commit/paging before/after and refuses severe
+pressure; no builds, SDK downloads, installs or bulk trace processing during measures.
+None is guarded on API34+ in Kotlin AND Python; older APIs require explicit Ignore,
+which must never be compared to None as equivalent compilation conditions.
+Direct instrumentation preserves packages but full tests overwrite fixture credentials,
+layout and notification grants: use compatibility_android on dedicated disposable
+CopilotDrive_Sprint9_API26/30/35 AVDs, never a valuable or physical target. Preserve
+original package/DataStore fingerprints before stopping it and verify after return.
+Memory stress separates sustained-process and restart populations; weak references and
+job counts are observations, not a substitute for heap dominators. See Sprint 9 docs.
+Reacquire recycled accessibility nodes after scroll; repeated stale observations fail
+explicitly and never count as proof of movement. Keep runner APK hashes in comparisons.
 
 Sprint 7: `DeviceQualification` reuses diagnostic EvidenceLevel and enforces build/API/model,
 preconditions, method and observation provenance. CompatibilityStatus is independent of

@@ -71,3 +71,52 @@ Fuentes oficiales consultadas:
 [métricas y ReportDrawnWhen](https://developer.android.com/topic/performance/benchmarking/macrobenchmark-metrics),
 [versiones](https://developer.android.com/jetpack/androidx/releases/benchmark),
 [ProfileInstaller](https://developer.android.com/jetpack/androidx/releases/profileinstaller).
+
+## Sprint 9 — forense y preservación
+
+`python scripts/host_health.py` captura tres muestras CIM de memoria disponible,
+headroom de commit, paginación y CPU. El runner Macrobenchmark lo exige antes y
+después: bloquea memoria física <512 MiB, commit libre <1024 MiB o las tres muestras
+con >1000 páginas entrantes/s. Son guardas conservadoras del host local, no un
+presupuesto de rendimiento de la app. Las muestras de extremos no excluyen picos
+intermedios; registrar ruido y no cerrar aplicaciones ajenas para conseguir verde.
+PagesInput/sec incluye fallos duros de ejecutables/DLL/ficheros mapeados, no solo
+lecturas del pagefile: el contador aislado no demuestra intercambio extremo.
+La guarda es conservadora y no atribuye causa de jank. Véase
+[contadores de memoria de Windows](https://learn.microsoft.com/en-us/troubleshoot/windows-client/performance/how-to-determine-the-appropriate-page-file-size-for-64-bit-versions-of-windows).
+También comprueba ActivityManager y los hashes instalados después, y conserva la
+identidad del paquete debug y hash de layout. No compilar/instalar/descargar SDK ni
+analizar masivamente trazas mientras se mide. Un fallo detiene la secuencia.
+
+```powershell
+python scripts/benchmark_android.py --serial emulator-5554 --allow-active --method dashboardScroll --iterations 20 --out artifacts/sprint9/repeat-dashboardScroll.json
+python scripts/collect_macro_evidence.py --serial emulator-5554 --allow-active --out artifacts/sprint9/macro/dashboardScroll
+python scripts/jank_evidence.py --trace-root artifacts/sprint9/macro --processor .tools/trace_processor.py --code-commit COMMIT_REAL_DEL_APK --apk artifacts/sprint9/baseline-benchmark.apk --run-root artifacts/sprint9 --out artifacts/sprint9/repeat-forensics.json
+```
+
+Repetir los cuatro escenarios secuencialmente. El collector crea una carpeta nueva
+y solo copia JSON nativo y sus trazas referenciadas; se niega a sobrescribir intentos.
+Descargar el launcher oficial de https://get.perfetto.dev/trace_processor a
+`.tools/trace_processor.py`; ejecutarlo con Python descarga el binario oficial
+verificado por el launcher. Esta sesión usó v58.2. Raw traces permanecen locales.
+Los errores de parseo se marcan REVIEW_REQUIRED y no se eliminan del informe.
+
+API26/30: compilar el nuevo runner y usar `--compilation Ignore`; la instrumentación
+también valida el modo y rechaza None antes de API34 aunque se invoque sin Python.
+Ignore conserva compilación existente: no comparar contra None como condiciones
+equivalentes. API26/30 no ofrecen frameOverrunMs: ausencia no es cero jank.
+
+La suite completa incluye tests que reemplazan la credencial fixture, guardan layout
+y conceden/revocan listener multimedia. **am instrument no desinstala**, pero eso
+no hace que la suite sea segura para preferencias personales. Ejecutarla mediante
+`compatibility_android.py --allow-disposable-install-and-tests` únicamente en AVDs
+dedicados `CopilotDrive_Sprint9_API26/30/35`. El runner rechaza teléfonos y otros AVDs,
+verifica firma/hash antes/después y registra errores de suite por separado.
+`connectedDebugAndroidTest` continúa reservado a CI/AVDs desechables.
+
+Un ensayo de renderer debe mantener APK/display/iteraciones/compilación, cerrar
+limpiamente el AVD y arrancar temporalmente con `-gpu host`, sin editar config.ini
+ni cargar/guardar snapshots. Verificar GLES efectivo, paquete y fingerprints de
+DataStore, repetir y restaurar el arranque original en finally. Un cambio de
+renderer es un experimento del entorno, no una optimización del código Android.
+Detenerse si falla restauración. No aplicar este procedimiento a un teléfono.

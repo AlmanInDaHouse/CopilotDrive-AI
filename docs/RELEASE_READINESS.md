@@ -1,8 +1,8 @@
-# Preparación técnica de distribución de prueba — Sprint 8
+# Preparación técnica de distribución de prueba — Sprint 9
 
 Resultado: candidata técnica para revisión y ensayos consentidos; no publicación,
 firma de producción ni verificación física. Estado exacto de ejecución en
-SPRINT8_REPORT, TEST_RESULTS y STABILITY_TEST_REPORT. Una firma Android Debug no
+SPRINT9_REPORT, TEST_RESULTS y STABILITY_TEST_REPORT. Una firma Android Debug no
 constituye una release de producción.
 
 | Comprobación | Estado y evidencia |
@@ -26,7 +26,7 @@ constituye una release de producción.
 | Rendimiento | TTID/TTFD instrumentados separados de cota ADB y PSS. No presupuesto inestable obligatorio en CI; muestras/condiciones en PERFORMANCE_COMPARISON |
 | Fluidez | Jank medido en las cuatro interacciones del emulador; causa sin aislar bajo renderer software/presión de host. Umbrales y fluidez en hardware PENDING; no se declara rendimiento de producción aprobado |
 | Estabilidad | Runner no destructivo; configuración restaurada y recuperación observada según STABILITY_TEST_REPORT. Una ejecución acotada no demuestra ausencia de fugas |
-| API26/API30 | PENDING ejecución: solo imagen API35 disponible. minSdk 26 es requisito de instalación, no certificación |
+| API26/API30/API35 | 34/34 instrumentadas por versión en AVDs oficiales; rotación/foreground en26 y smoke offline completo en30/35. Offline26 BLOCKED por svc wifi137, estado observado restaurado; no certificación OEM |
 | Hardware y servicios comerciales | PENDING: voz audible/STT, ELM327/coche, reproductores, Maps/Waze/GPS, TalkBack, contactos ficticios y proveedores con cuota |
 
 Antes de distribución externa: revisar los componentes de test presentes en debug,
