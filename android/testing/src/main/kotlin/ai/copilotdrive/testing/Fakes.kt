@@ -2,7 +2,6 @@ package ai.copilotdrive.testing
 
 import ai.copilotdrive.core.*
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableStateFlow
 
 class DeterministicClock(var time: Long = 1_700_000_000_000) : Clock {
     override fun now() = time
@@ -21,24 +20,15 @@ class FakeVehicleProvider(var value: VehicleSnapshot) : VehicleDataProvider {
     }
 }
 
-class FakeMediaAdapter(private val clock: Clock) : MediaSourceAdapter {
-    override val state = MutableStateFlow(MediaSnapshot(
-        sourceApp = "Simulador de audio", title = "Midnight Drive", artist = "Biblioteca de demostración",
-        durationMs = 210_000, positionMs = 42_000, playbackStatus = PlaybackStatus.PAUSED,
-        supportedControls = setOf(MediaControl.PLAY, MediaControl.PAUSE, MediaControl.NEXT, MediaControl.PREVIOUS),
-        capturedAt = clock.now(), simulated = true,
-    ))
+class FakeMediaAdapter(clock: Clock) : MediaSourceAdapter {
+    private val demo = DemoMediaAdapter(clock)
+    override val state = demo.state
     val calls = mutableListOf<MediaControl>()
     var reject = false
     override suspend fun command(control: MediaControl): ToolResult {
         if (reject || control !in state.value.supportedControls) return ToolResult.denied("media", "UNSUPPORTED", "Control no disponible.")
         calls += control
-        state.value = state.value.copy(
-            title = when (control) { MediaControl.NEXT -> "Coastal Road"; MediaControl.PREVIOUS -> "Midnight Drive"; else -> state.value.title },
-            playbackStatus = when (control) { MediaControl.PLAY -> PlaybackStatus.PLAYING; MediaControl.PAUSE -> PlaybackStatus.PAUSED; else -> state.value.playbackStatus },
-            capturedAt = clock.now(),
-        )
-        return ToolResult("media.${control.name.lowercase()}", ExecutionStatus.SUCCESS, "Simulación. Reproductor: ${state.value.playbackStatus.name.lowercase()}.")
+        return demo.command(control)
     }
 }
 

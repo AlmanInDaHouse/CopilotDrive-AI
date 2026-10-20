@@ -8,7 +8,6 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import ai.copilotdrive.app.platform.*
 import ai.copilotdrive.core.*
-import ai.copilotdrive.testing.FakeMediaAdapter
 import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.Job
@@ -43,12 +42,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val clock = ai.copilotdrive.core.SystemClock
     private val vehicle = VehicleContextEngine(SimulatorVehicleProvider(clock), clock)
     val androidMedia = AndroidMediaAdapter(app)
-    private val fakeMedia = FakeMediaAdapter(clock)
+    private val demoMediaAdapter = DemoMediaAdapter(clock)
     private var demoMedia = true
     private val media = object : MediaSourceAdapter {
-        override val state = MutableStateFlow(fakeMedia.state.value)
+        override val state = MutableStateFlow(demoMediaAdapter.state.value)
         override suspend fun command(control: MediaControl): ToolResult {
-            val result = (if (demoMedia) fakeMedia else androidMedia).command(control)
+            val result = (if (demoMedia) demoMediaAdapter else androidMedia).command(control)
             refreshMedia()
             return result
         }
@@ -131,7 +130,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
     private fun refreshMedia() {
-        media.state.value = if (demoMedia) fakeMedia.state.value else androidMedia.state.value
+        media.state.value = if (demoMedia) demoMediaAdapter.state.value else androidMedia.state.value
         mutable.update { it.copy(media = media.state.value, artwork = if (demoMedia) null else androidMedia.artwork.value, sessions = androidMedia.sessions.value, demoMedia = demoMedia) }
     }
     private fun refreshCapabilities() {
