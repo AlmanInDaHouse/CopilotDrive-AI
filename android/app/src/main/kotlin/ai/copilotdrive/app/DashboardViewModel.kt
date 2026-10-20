@@ -20,6 +20,11 @@ import kotlinx.coroutines.launch
 
 data class DashboardState(
     val vehicle: VehicleSnapshot? = null,
+    val vehicleConnection: VehicleConnectionState = VehicleConnectionState.SIMULATED,
+    val obdDevices: List<PairedObdDevice> = emptyList(),
+    val selectedObdAddress: String? = null,
+    val obdCapabilities: Set<String> = emptySet(),
+    val obdError: String? = null,
     val media: MediaSnapshot = MediaSnapshot(),
     val artwork: Bitmap? = null,
     val voice: VoiceSessionState = VoiceSessionState(),
@@ -43,7 +48,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val preferences = Preferences(app)
     private val secrets = KeystoreSecretStore(app)
     private val clock = ai.copilotdrive.core.SystemClock
-    private val vehicle = VehicleContextEngine(SimulatorVehicleProvider(clock), clock)
+    private val bluetooth = AndroidBluetoothObd(app)
+    private val obd = BluetoothObdProvider(bluetooth, clock, viewModelScope)
+    private val vehicle = VehicleContextEngine(obd, clock)
     val androidMedia = AndroidMediaAdapter(app)
     private val demoMediaAdapter = DemoMediaAdapter(clock)
     private var demoMedia = true
@@ -67,7 +74,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val permissionProvider = PermissionProvider { id ->
         when (id) {
             "vehicle.fuel", "vehicle.temperature", "vehicle.snapshot" -> CapabilityStatus.AVAILABLE
-            "vehicle.obd_connected" -> CapabilityStatus.NOT_CONFIGURED
+            "vehicle.obd_connected" -> when (obd.state.value) {
+                VehicleConnectionState.CONNECTED_REAL -> CapabilityStatus.AVAILABLE
+                VehicleConnectionState.UNSUPPORTED -> CapabilityStatus.UNSUPPORTED
+                VehicleConnectionState.ERROR -> CapabilityStatus.ERROR
+                else -> CapabilityStatus.DISCONNECTED
+            }
             "microphone.available" -> if (app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
             "voice.recognition" -> when { !stt.available() -> CapabilityStatus.UNSUPPORTED; !stt.localAvailable() && !mutable.value.preferences.allowSystemRecognition -> CapabilityStatus.NOT_CONFIGURED; else -> CapabilityStatus.AVAILABLE }
             "voice.wakeword_available" -> CapabilityStatus.NOT_CONFIGURED
@@ -108,6 +120,14 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
         viewModelScope.launch { voice.state.collect { session -> mutable.update { it.copy(voice = session) }; refreshMedia() } }
         viewModelScope.launch { androidMedia.state.collect { refreshMedia() } }
+        viewModelScope.launch { obd.state.collect { connection ->
+            vehicle.invalidate()
+            mutable.update { it.copy(vehicleConnection = connection, obdError = obd.error.value) }
+            refreshCapabilities()
+        } }
+        viewModelScope.launch { obd.capabilities.collect { supported ->
+            mutable.update { it.copy(obdCapabilities = supported.map { pid -> pid.wire }.toSet()) }
+        } }
     }
 
     fun foreground() {
@@ -122,7 +142,36 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
     }
-    fun background() { ticker?.cancel(); ticker = null; cancel(); androidMedia.close() }
+    fun background() { ticker?.cancel(); ticker = null; cancel(); androidMedia.close(); if (obd.state.value != VehicleConnectionState.SIMULATED) obd.disconnect() }
+    fun refreshPairedBluetooth() {
+        try {
+            if (!bluetooth.present()) {
+                obd.unsupported("Este dispositivo no dispone de Bluetooth.")
+                mutable.update { it.copy(obdDevices = emptyList(), obdError = "Este dispositivo no dispone de Bluetooth.") }
+                return
+            }
+            val devices = bluetooth.pairedDevices()
+            mutable.update { it.copy(obdDevices = devices, obdError = when {
+                !bluetooth.available() -> "Bluetooth no disponible o apagado."
+                devices.isEmpty() -> "No hay adaptadores emparejados. Empareja uno en Ajustes de Android."
+                else -> null
+            }) }
+        } catch (_: SecurityException) { mutable.update { it.copy(obdDevices = emptyList(), selectedObdAddress = null,
+            obdError = "Autoriza dispositivos cercanos para consultar los emparejados.") } }
+    }
+    fun selectObd(address: String) {
+        if (mutable.value.obdDevices.none { it.address == address }) return
+        mutable.update { it.copy(selectedObdAddress = address) }
+    }
+    fun connectObd() {
+        val address = mutable.value.selectedObdAddress ?: return
+        if (!bluetooth.present()) { obd.unsupported("Este dispositivo no dispone de Bluetooth."); return }
+        if (!bluetooth.permitted()) { mutable.update { it.copy(obdError = "Falta permiso Bluetooth.") }; return }
+        if (!bluetooth.available()) { mutable.update { it.copy(obdError = "Bluetooth no disponible o apagado.") }; return }
+        vehicle.invalidate(); obd.connect(address)
+    }
+    fun disconnectObd() { obd.disconnect(); vehicle.invalidate() }
+    fun useSimulator() { obd.disconnect(true); vehicle.invalidate() }
     fun listen() { if (mutable.value.preferences.onboarded) voice.listen() }
     fun demo(text: String) { if (mutable.value.preferences.onboarded) voice.demo(text) }
     fun cancel() { voice.cancel() }
@@ -184,5 +233,5 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         )
         mutable.update { it.copy(capabilities = labels.map { (id, label) -> Capability(id, capabilities.get(id), label) }) }
     }
-    override fun onCleared() { background(); assistant.clearAllConversations(); tts.close(); super.onCleared() }
+    override fun onCleared() { background(); bluetooth.dispose(); assistant.clearAllConversations(); tts.close(); super.onCleared() }
 }
