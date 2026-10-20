@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.Application
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.os.SystemClock
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import ai.copilotdrive.app.platform.*
@@ -49,7 +50,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val secrets = KeystoreSecretStore(app)
     private val clock = ai.copilotdrive.core.SystemClock
     private val bluetooth = AndroidBluetoothObd(app)
-    private val obd = BluetoothObdProvider(bluetooth, clock, viewModelScope)
+    private val diagnosticHistory = DiagnosticHistory()
+    private val obd = BluetoothObdProvider(bluetooth, clock, viewModelScope, diagnosticHistory::record)
     private val vehicle = VehicleContextEngine(obd, clock)
     val androidMedia = AndroidMediaAdapter(app)
     private val demoMediaAdapter = DemoMediaAdapter(clock)
@@ -69,8 +71,15 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             if (result.executionStatus == ExecutionStatus.SUCCESS) mutable.update { it.copy(destination = destination) }
         }
     }
-    private val stt = AndroidSpeechRecognizer(app) { mutable.value.preferences.allowSystemRecognition }
+    private val latencyTracker = VoiceLatencyTracker()
+    val voiceLatencies = latencyTracker.summaries
+    private val stt = AndroidSpeechRecognizer(app, { mutable.value.preferences.allowSystemRecognition }) {
+        recordVoiceMetric(VoiceMetric.STT_INIT, it)
+    }
     private val tts = AndroidTextToSpeech(app)
+    val diagnostics = diagnosticHistory.checks
+    private val deviceDiagnostics = DeviceDiagnostics(app, bluetooth, stt, tts)
+    private var obdStartedMs: Long? = null
     private val permissionProvider = PermissionProvider { id ->
         when (id) {
             "vehicle.fuel", "vehicle.temperature", "vehicle.snapshot" -> CapabilityStatus.AVAILABLE
@@ -102,7 +111,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     )
     private val assistant = AssistantOrchestrator(tools, clock, aiProvider)
     private val focus: AndroidAudioFocus = AndroidAudioFocus(app) { cancel() }
-    private val voice: VoiceSessionCoordinator = VoiceSessionCoordinator(viewModelScope, stt, tts, assistant, focus, clock) { capabilities.available("microphone.available") }
+    private val voice: VoiceSessionCoordinator = VoiceSessionCoordinator(viewModelScope, stt, tts, assistant, focus, clock,
+        ::recordVoiceMetric, ::recordVoiceFailure, { capabilities.available("microphone.available") })
     private var ticker: Job? = null
 
     init {
@@ -115,7 +125,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 }
         }
         viewModelScope.launch {
+            val started = SystemClock.elapsedRealtime()
             tts.initialize()
+            recordVoiceMetric(VoiceMetric.TTS_INIT, (SystemClock.elapsedRealtime() - started).coerceAtLeast(0))
             mutable.update { it.copy(voices = tts.voices.value, ttsStatus = tts.status.value, credentialSaved = secrets.get() != null) }
             refreshCapabilities()
         }
@@ -125,6 +137,20 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             vehicle.invalidate()
             mutable.update { it.copy(vehicleConnection = connection, obdError = obd.error.value) }
             refreshCapabilities()
+            if (connection == VehicleConnectionState.CONNECTED_REAL || connection == VehicleConnectionState.ERROR ||
+                connection == VehicleConnectionState.STALE || connection == VehicleConnectionState.DISCONNECTED) {
+                val started = obdStartedMs
+                if (started != null) {
+                    diagnosticHistory.record(DiagnosticCheck("obd.connection", "bluetooth",
+                        if (connection == VehicleConnectionState.CONNECTED_REAL) DiagnosticStatus.PASS else DiagnosticStatus.FAIL,
+                        EvidenceLevel.PENDING, System.currentTimeMillis(),
+                        (SystemClock.elapsedRealtime() - started).coerceAtLeast(0),
+                        if (connection == VehicleConnectionState.CONNECTED_REAL) null else connection.name,
+                        "Estado RFCOMM/ELM: ${connection.name}; comprobación física manual pendiente.",
+                        if (connection == VehicleConnectionState.CONNECTED_REAL) null else "Revisa alimentación, emparejamiento y permisos."))
+                    if (connection != VehicleConnectionState.STALE) obdStartedMs = null
+                }
+            }
         } }
         viewModelScope.launch { obd.capabilities.collect { supported ->
             mutable.update { it.copy(obdCapabilities = supported.map { pid -> pid.wire }.toSet()) }
@@ -133,6 +159,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun foreground() {
         if (ticker?.isActive == true) return
+        viewModelScope.launch {
+            tts.initialize()
+            mutable.update { it.copy(voices = tts.voices.value, ttsStatus = tts.status.value) }
+            refreshCapabilities()
+        }
         ticker = viewModelScope.launch {
             while (true) {
                 androidMedia.refresh()
@@ -169,10 +200,37 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         if (!bluetooth.present()) { obd.unsupported("Este dispositivo no dispone de Bluetooth."); return }
         if (!bluetooth.permitted()) { mutable.update { it.copy(obdError = "Falta permiso Bluetooth.") }; return }
         if (!bluetooth.available()) { mutable.update { it.copy(obdError = "Bluetooth no disponible o apagado.") }; return }
+        obdStartedMs = SystemClock.elapsedRealtime()
         vehicle.invalidate(); obd.connect(address)
     }
     fun disconnectObd() { obd.disconnect(); vehicle.invalidate() }
     fun useSimulator() { obd.disconnect(true); vehicle.invalidate() }
+    fun runLocalDiagnostics() {
+        val current = mutable.value
+        deviceDiagnostics.local(current.preferences.ai, current.credentialSaved,
+            if (current.vehicleConnection == VehicleConnectionState.SIMULATED) "SIMULATED" else "REAL",
+            current.obdCapabilities).forEach(diagnosticHistory::record)
+    }
+    fun checkBluetoothDiagnostics() {
+        runLocalDiagnostics()
+        diagnosticHistory.record(deviceDiagnostics.bluetoothPairing())
+    }
+    fun checkVoiceDiagnostics() { runLocalDiagnostics() }
+    fun checkCapabilitiesDiagnostics() { refreshCapabilities(); runLocalDiagnostics() }
+    fun clearDiagnostics() { diagnosticHistory.clear() }
+    private fun recordVoiceMetric(metric: VoiceMetric, durationMs: Long) {
+        latencyTracker.record(metric, durationMs)
+        diagnosticHistory.record(DiagnosticCheck("voice.${metric.name.lowercase()}", "voice", DiagnosticStatus.PASS,
+            EvidenceLevel.PENDING, System.currentTimeMillis(), durationMs,
+            description = "Duración técnica ${metric.name}; no acredita calidad acústica."))
+    }
+    private fun recordVoiceFailure(stage: String, code: String) {
+        diagnosticHistory.record(DiagnosticCheck("voice.${stage.lowercase()}", "voice",
+            if (code == "CANCELLED") DiagnosticStatus.CANCELLED else DiagnosticStatus.FAIL,
+            EvidenceLevel.PENDING, System.currentTimeMillis(), errorCode = code,
+            description = "Etapa de voz $stage: $code. La respuesta escrita permanece disponible.",
+            correctiveAction = if (code == "CANCELLED") null else "Revisa permisos, servicio y voz instalada; reintenta manualmente."))
+    }
     fun listen() { if (mutable.value.preferences.onboarded) voice.listen() }
     fun demo(text: String) { if (mutable.value.preferences.onboarded) voice.demo(text) }
     fun cancel() { voice.cancel() }
@@ -194,7 +252,18 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
     fun clearConversation() { assistant.clearAllConversations(); mutable.update { it.copy(notice = "Conversación borrada.") } }
     fun testProvider() { viewModelScope.launch {
+        val started = SystemClock.elapsedRealtime()
         val result = aiProvider.generate(AIRequest("Responde solo: conexión disponible."))
+        val code = when (result) {
+            is AIResponse.Unavailable -> result.error.code
+            is AIResponse.Invalid -> result.error.code
+            else -> null
+        }
+        diagnosticHistory.record(DiagnosticCheck("ai.interoperability", "ai",
+            if (code == null) DiagnosticStatus.PASS else DiagnosticStatus.FAIL, EvidenceLevel.PENDING,
+            System.currentTimeMillis(), (SystemClock.elapsedRealtime() - started).coerceAtLeast(0), code,
+            if (code == null) "Respuesta estructural recibida; compatibilidad completa sin verificar." else "Consulta de prueba falló: $code.",
+            if (code == null) null else "Revisa endpoint, cuota, credencial y conexión."))
         mutable.update { it.copy(notice = when (result) {
             is AIResponse.Text, is AIResponse.ProposedTool -> "Proveedor respondió."
             is AIResponse.Unavailable -> result.error.message
@@ -202,8 +271,20 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }) }
     } }
     fun testVoice() { viewModelScope.launch {
-        try { tts.speak("Prueba de voz en español."); mutable.update { it.copy(notice = "Prueba de voz completada.") } }
-        catch (_: Exception) { mutable.update { it.copy(notice = "No se pudo reproducir la voz; la respuesta escrita sigue disponible.") } }
+        val started = SystemClock.elapsedRealtime()
+        try {
+            tts.speak("Prueba de voz en español.")
+            diagnosticHistory.record(DiagnosticCheck("tts.callback", "voice", DiagnosticStatus.PASS, EvidenceLevel.PENDING,
+                System.currentTimeMillis(), (SystemClock.elapsedRealtime() - started).coerceAtLeast(0),
+                description = "Callback TTS completado; calidad audible requiere confirmación humana."))
+            mutable.update { it.copy(notice = "Motor TTS finalizó. Confirma tú si se escuchó bien.") }
+        } catch (cancelled: kotlinx.coroutines.CancellationException) { throw cancelled }
+        catch (_: Exception) {
+            diagnosticHistory.record(DiagnosticCheck("tts.callback", "voice", DiagnosticStatus.FAIL, EvidenceLevel.PENDING,
+                System.currentTimeMillis(), (SystemClock.elapsedRealtime() - started).coerceAtLeast(0), "TTS_ERROR",
+                "La reproducción TTS falló; respuesta escrita disponible.", "Instala o selecciona una voz local es-ES."))
+            mutable.update { it.copy(notice = "No se pudo reproducir la voz; la respuesta escrita sigue disponible.") }
+        }
     } }
     fun installVoiceData() {
         try {

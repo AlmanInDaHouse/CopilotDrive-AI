@@ -100,7 +100,14 @@ class TelemetryPollingCoordinator(
 
 class BluetoothObdProvider(
     private val transport: BluetoothTransport, private val clock: Clock, private val scope: CoroutineScope,
+    private val onDiagnostic: (DiagnosticCheck) -> Unit = {},
 ) : VehicleDataProvider {
+    private fun observe(id: String, status: DiagnosticStatus, startedNs: Long, code: String? = null) {
+        onDiagnostic(DiagnosticCheck("obd.$id", "bluetooth", status, EvidenceLevel.PENDING, clock.now(),
+            ((System.nanoTime() - startedNs) / 1_000_000).coerceAtLeast(0), code,
+            "OBD $id: ${status.name}; verificar hardware y vehículo por separado.",
+            if (status == DiagnosticStatus.FAIL) "Revisa emparejamiento, permisos, alimentación y compatibilidad ELM." else null))
+    }
     private val mutableState = MutableStateFlow(VehicleConnectionState.SIMULATED)
     val state: StateFlow<VehicleConnectionState> = mutableState
     private val mutableSnapshot = MutableStateFlow(simulatedVehicle(clock.now()))
@@ -121,6 +128,7 @@ class BluetoothObdProvider(
     }
 
     fun connect(address: String) {
+        val connectionStart = System.nanoTime()
         val previous = session
         previous?.cancel()
         transport.close()
@@ -134,16 +142,27 @@ class BluetoothObdProvider(
                 var attempts = 0
                 while (attempts < 2) {
                     try {
-                        withTimeout(8_000) { transport.open(address); Elm327Protocol(transport).initialize() }
+                        val openStart = System.nanoTime()
+                        withTimeout(8_000) { transport.open(address) }
+                        observe("rfcomm", DiagnosticStatus.PASS, openStart)
+                        val initStart = System.nanoTime()
+                        withTimeout(8_000) { Elm327Protocol(transport).initialize() }
+                        observe("elm_init", DiagnosticStatus.PASS, initStart)
+                        val discoveryStart = System.nanoTime()
                         val supported = withTimeout(5_000) { VehicleCapabilityDiscovery(transport).discover() }
+                        observe("pid_discovery", DiagnosticStatus.PASS, discoveryStart)
                         mutableCapabilities.value = supported
                         mutableSnapshot.value = emptyRealSnapshot(clock.now(), supported)
                         mutableState.value = VehicleConnectionState.CONNECTED_REAL
+                        observe("connection", DiagnosticStatus.PASS, connectionStart)
                         val poller = TelemetryPollingCoordinator(transport, clock, supported) { request, value, at ->
                             mutableSnapshot.value = mutableSnapshot.value.withReading(request, value, at)
+                            observe(if (value == null) "reading_unavailable" else "reading_success", DiagnosticStatus.PASS, System.nanoTime(),
+                                request.wire)
                         }
                         while (true) { poller.pollOnce(); delay(1_000) }
                     } catch (timeout: TimeoutCancellationException) {
+                        observe("timeout", DiagnosticStatus.FAIL, connectionStart, "TIMEOUT")
                         transport.close()
                         mutableSnapshot.value = disconnectedSnapshot(clock.now())
                         attempts++
@@ -151,9 +170,10 @@ class BluetoothObdProvider(
                             mutableError.value = "Tiempo de espera OBD agotado"
                             mutableState.value = VehicleConnectionState.ERROR
                             mutableSnapshot.value = disconnectedSnapshot(clock.now())
-                        } else { mutableState.value = VehicleConnectionState.STALE; delay(1_000) }
+                        } else { mutableState.value = VehicleConnectionState.STALE; observe("reconnect", DiagnosticStatus.PENDING, connectionStart); delay(1_000) }
                     } catch (cancelled: CancellationException) { throw cancelled }
                     catch (failure: Exception) {
+                        observe("disconnect", DiagnosticStatus.FAIL, connectionStart, failure.javaClass.simpleName)
                         transport.close()
                         mutableSnapshot.value = disconnectedSnapshot(clock.now())
                         attempts++
@@ -161,10 +181,10 @@ class BluetoothObdProvider(
                             mutableError.value = failure.message ?: "Error de conexión OBD"
                             mutableState.value = VehicleConnectionState.ERROR
                             mutableSnapshot.value = disconnectedSnapshot(clock.now())
-                        } else { mutableState.value = VehicleConnectionState.STALE; delay(1_000) }
+                        } else { mutableState.value = VehicleConnectionState.STALE; observe("reconnect", DiagnosticStatus.PENDING, connectionStart); delay(1_000) }
                     }
                 }
-            } finally { transport.close() }
+            } finally { transport.close(); observe("socket_close", DiagnosticStatus.PENDING, System.nanoTime()) }
         }
     }
 
@@ -173,6 +193,7 @@ class BluetoothObdProvider(
         mutableCapabilities.value = emptySet()
         mutableState.value = if (simulator) VehicleConnectionState.SIMULATED else VehicleConnectionState.DISCONNECTED
         mutableSnapshot.value = if (simulator) simulatedVehicle(clock.now()) else disconnectedSnapshot(clock.now())
+        observe(if (simulator) "simulator_return" else "manual_disconnect", DiagnosticStatus.PASS, System.nanoTime())
     }
 
     fun unsupported(reason: String) {
