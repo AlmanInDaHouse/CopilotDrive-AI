@@ -17,7 +17,7 @@ interface ContactProvider {
 }
 fun interface PlacesProvider { suspend fun searchNearby(query: String): List<Place> }
 fun interface PermissionProvider { fun status(capability: String): CapabilityStatus }
-fun interface AIProvider { suspend fun propose(request: AssistantRequest): ToolRequest? }
+fun interface AIProvider { suspend fun generate(request: AIRequest): AIResponse }
 interface SpeechToTextProvider {
     suspend fun recognize(onTranscribing: () -> Unit): String
     fun cancel()

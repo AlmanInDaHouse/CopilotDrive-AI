@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withTimeout
 
 enum class VoiceState { IDLE, LISTENING, TRANSCRIBING, UNDERSTANDING, EXECUTING, SPEAKING, CANCELLED, PERMISSION_REQUIRED, ERROR }
-data class VoiceSessionState(val state: VoiceState = VoiceState.IDLE, val message: String = "Listo para ayudarte", val elapsedMs: Long = 0)
+data class VoiceSessionState(val state: VoiceState = VoiceState.IDLE, val message: String = "Listo para ayudarte", val elapsedMs: Long = 0, val errorSource: String? = null)
 
 class VoiceSessionCoordinator(
     private val scope: CoroutineScope,
@@ -55,17 +55,24 @@ class VoiceSessionCoordinator(
                 transition(VoiceState.EXECUTING, "Consultando…")
                 val result = assistant.answer(request)
                 transition(VoiceState.SPEAKING, result.message)
+                val replyErrorSource = if (result.toolId == "assistant" && result.errorCode != null) "AI" else null
+                if (token == generation) mutable.value = mutable.value.copy(errorSource = replyErrorSource)
                 withTimeout(20_000) { tts.speak(result.message) }
                 transition(VoiceState.IDLE)
+                if (token == generation) mutable.value = mutable.value.copy(errorSource = replyErrorSource)
             } catch (_: TimeoutCancellationException) {
-                transition(VoiceState.ERROR, "Tiempo de espera agotado. Puedes volver a intentarlo.")
+                val timedOutWhileSpeaking = mutable.value.state == VoiceState.SPEAKING
+                transition(VoiceState.ERROR, if (timedOutWhileSpeaking) mutable.value.message + " · Voz no disponible (tiempo agotado)." else "Tiempo de espera agotado. Puedes volver a intentarlo.")
+                if (token == generation) mutable.value = mutable.value.copy(errorSource = if (timedOutWhileSpeaking) "TTS" else "STT")
             } catch (cancelled: CancellationException) {
                 throw cancelled
             } catch (_: SecurityException) {
                 transition(VoiceState.PERMISSION_REQUIRED, "Falta permiso o consentimiento para reconocimiento.")
             } catch (_: Exception) {
-                val message = if (mutable.value.state == VoiceState.SPEAKING) mutable.value.message + " · Voz no disponible." else "Voz no disponible. Revisa motor, permisos y conexión."
+                val speaking = mutable.value.state == VoiceState.SPEAKING
+                val message = if (speaking) mutable.value.message + " · Voz no disponible." else "Voz no disponible. Revisa motor, permisos y conexión."
                 transition(VoiceState.ERROR, message)
+                mutable.value = mutable.value.copy(errorSource = if (speaking) "TTS" else "STT")
             } finally {
                 if (token == generation) {
                     stt.cancel()

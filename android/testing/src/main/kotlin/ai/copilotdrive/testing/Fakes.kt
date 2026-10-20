@@ -64,8 +64,38 @@ class FakePlacesProvider : PlacesProvider {
 
 class FakeAIProvider(var proposal: ToolRequest? = null) : AIProvider {
     var calls = 0
-    override suspend fun propose(request: AssistantRequest): ToolRequest? { calls++; return proposal }
+    var response: AIResponse? = null
+    var lastRequest: AIRequest? = null
+    override suspend fun generate(request: AIRequest): AIResponse {
+        calls++; lastRequest = request
+        return response ?: proposal?.let { AIResponse.ProposedTool(ToolProposal(it.toolId, it.arguments)) }
+            ?: AIResponse.Unavailable(AIError("NOT_CONFIGURED", "IA no configurada."))
+    }
 }
+
+class FakeConversationStore : ConversationStore by EphemeralConversationStore()
+class FakeProviderSettings(var value: ProviderConfiguration = ProviderConfiguration()) : ProviderSettings {
+    override fun current() = value
+}
+class FakeSecretStore(var value: String? = null) : SecretStore {
+    override fun get() = value
+    override fun put(secret: String) { value = secret }
+    override fun clear() { value = null }
+}
+class FakeHTTPTransport(var response: HTTPResponse = HTTPResponse(200, "")) : HTTPTransport {
+    var calls = 0
+    var lastUrl: String? = null
+    var lastBody: String? = null
+    var failure: Exception? = null
+    var delayMs = 0L
+    override suspend fun post(url: String, token: String, body: String, timeoutMs: Int): HTTPResponse {
+        calls++; lastUrl = url; lastBody = body
+        delay(delayMs)
+        failure?.let { throw it }
+        return response
+    }
+}
+class FakeTTSVoiceCatalog(var voices: List<String> = emptyList())
 
 class FakeSpeechRecognizer : SpeechToTextProvider {
     var text = "Jarvis, cuánta gasolina queda"
@@ -85,7 +115,8 @@ class FakeSpeechRecognizer : SpeechToTextProvider {
 class FakeTextToSpeech : TextToSpeechProvider {
     val spoken = mutableListOf<String>()
     var failure: Exception? = null
-    override suspend fun speak(text: String) { failure?.let { throw it }; spoken += text }
+    var delayMs = 0L
+    override suspend fun speak(text: String) { delay(delayMs); failure?.let { throw it }; spoken += text }
     override fun stop() = Unit
 }
 
