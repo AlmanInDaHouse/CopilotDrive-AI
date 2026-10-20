@@ -7,11 +7,14 @@ import kotlinx.coroutines.withTimeout
 data class ToolDefinition(
     val id: String, val capability: String, val arguments: Set<String> = emptySet(),
     val requiresConfirmation: Boolean = false, val timeoutMs: Long = 3_000,
+    val optionalArguments: Set<String> = emptySet(),
 )
 
 class PolicyEngine(private val capabilities: CapabilityRegistry) {
     fun evaluate(definition: ToolDefinition, request: ToolRequest, confirmedNumber: String?): ToolResult? {
-        if (request.arguments.keys != definition.arguments || request.arguments.values.any { it.isBlank() || it.length > 200 }) {
+        if (!request.arguments.keys.containsAll(definition.arguments) ||
+            !((definition.arguments + definition.optionalArguments).containsAll(request.arguments.keys)) ||
+            request.arguments.values.any { it.isBlank() || it.length > 200 }) {
             return ToolResult.denied(request.toolId, "INVALID_ARGUMENTS", "Parámetros de herramienta no válidos.")
         }
         if (!capabilities.available(definition.capability)) {
@@ -37,7 +40,7 @@ class ToolRegistry(
         ToolDefinition("vehicle.get_snapshot", "vehicle.snapshot"),
         ToolDefinition("media.get_current", "media.session_access"),
         ToolDefinition("media.play", "media.playback_control"),
-        ToolDefinition("media.pause", "media.playback_control"),
+        ToolDefinition("media.pause", "media.playback_control", optionalArguments = setOf("sourceApp")),
         ToolDefinition("media.next", "media.playback_control"),
         ToolDefinition("media.previous", "media.playback_control"),
         ToolDefinition("navigation.open_destination", "navigation.available", setOf("destination", "provider")),
@@ -84,7 +87,10 @@ class ToolRegistry(
         }
         "media.play", "media.pause", "media.next", "media.previous" -> {
             val control = MediaControl.valueOf(request.toolId.substringAfter('.').uppercase())
-            if (control !in media.state.value.supportedControls) {
+            val expectedApp = request.arguments["sourceApp"]
+            if (expectedApp != null && media.state.value.sourceApp != expectedApp) {
+                ToolResult.denied(request.toolId, "WRONG_SESSION", "La sesión seleccionada no es la aplicación solicitada. Elígela en Ajustes.")
+            } else if (control !in media.state.value.supportedControls) {
                 ToolResult.denied(request.toolId, "UNSUPPORTED", "El reproductor no ofrece ese control.")
             } else media.command(control)
         }

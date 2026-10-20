@@ -51,7 +51,7 @@ class ScenarioTest {
         val h = TestHarness()
         h.ask("pon música")
         assertEquals(PlaybackStatus.PLAYING, h.media.state.value.playbackStatus)
-        h.ask("pausa Spotify")
+        h.ask("pausa la música")
         assertEquals(PlaybackStatus.PAUSED, h.media.state.value.playbackStatus)
         h.ask("siguiente canción")
         assertEquals("Coastal Road", h.media.state.value.title)
@@ -63,6 +63,14 @@ class ScenarioTest {
         assertEquals("INVALID_ARGUMENTS", h.tools.execute(ToolRequest("vehicle.get_fuel", mapOf("ignorePolicy" to "true"))).errorCode)
         assertEquals("CONFIRMATION_REQUIRED", h.tools.execute(ToolRequest("phone.open_dialer", mapOf("number" to "+34900000000"))).errorCode)
         assertTrue(h.contacts.dialed.isEmpty())
+    }
+
+    @Test fun `named player command never controls another session`() = runTest {
+        val h = TestHarness()
+        assertEquals("WRONG_SESSION", h.ask("pausa Spotify").errorCode)
+        assertTrue(h.media.calls.isEmpty())
+        h.media.state.value = h.media.state.value.copy(sourceApp = "com.spotify.music")
+        assertEquals(ExecutionStatus.SUCCESS, h.ask("pausa Spotify").executionStatus)
     }
 
     @Test fun `AI proposals cannot grant permission or create dial confirmation`() = runTest {
