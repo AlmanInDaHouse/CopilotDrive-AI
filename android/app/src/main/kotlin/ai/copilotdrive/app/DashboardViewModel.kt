@@ -39,6 +39,10 @@ data class DashboardState(
     val demoMedia: Boolean = true,
     val clock: String = "--:--",
     val destination: String? = null,
+    val places: PlacesState = PlacesState(),
+    val placesConsent: Boolean = false,
+    val placesStationary: Boolean = false,
+    val placesConfigured: Boolean = BuildConfig.PLACES_ANDROID_API_KEY.isNotBlank(),
     val notice: String = "Datos ficticios · Movimiento del vehículo desconocido",
 )
 
@@ -65,12 +69,37 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
     private val androidNavigation = AndroidNavigation(app)
+    private val androidLocation = AndroidLocationProvider(app)
+    private var demoPlaces = false
+    private var placesConsent = false
+    private var stationaryPlaces = false
+    private var stationaryConfirmedAt = 0L
+    private fun stationaryValid() = stationaryPlaces && clock.now() >= stationaryConfirmedAt && clock.now() - stationaryConfirmedAt <= 120_000
     private val contacts = AndroidContacts(app)
     private val navigation = NavigationProvider { destination, provider ->
         androidNavigation.openDestination(destination, provider).also { result ->
             if (result.executionStatus == ExecutionStatus.SUCCESS) mutable.update { it.copy(destination = destination) }
         }
     }
+    private val places = PlacesController(
+        object : LocationProvider {
+            override suspend fun current(): LocationSnapshot = if (demoPlaces)
+                LocationSnapshot(Coordinates(40.4168, -3.7038), 500f, clock.now(), "SIMULACIÓN · Madrid", LocationAvailability.AVAILABLE)
+            else androidLocation.current()
+        },
+        object : PlacesProvider {
+            override suspend fun searchNearby(request: PlaceSearchRequest): List<PlaceSearchResult> =
+                if (demoPlaces) DemoPlacesProvider(clock).searchNearby(request)
+                else GooglePlacesProvider(app, BuildConfig.PLACES_ANDROID_API_KEY, clock).searchNearby(request)
+        },
+        NavigationProvider { destination, provider -> if (demoPlaces)
+            ToolResult("navigation.open_selected_place", ExecutionStatus.SUCCESS, "Simulación: destino enviado al navegador ficticio. No hay ruta activa.")
+            else navigation.openDestination(destination, provider) }, clock,
+        canQuery = { demoPlaces || placesConsent },
+        hasLocationPermission = { demoPlaces || androidLocation.permitted() },
+        isDemo = { demoPlaces },
+        safeToExplore = { stationaryValid() },
+    )
     private val latencyTracker = VoiceLatencyTracker()
     val voiceLatencies = latencyTracker.summaries
     private val stt = AndroidSpeechRecognizer(app, { mutable.value.preferences.allowSystemRecognition }) {
@@ -95,16 +124,17 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             "voice.wakeword_available" -> CapabilityStatus.NOT_CONFIGURED
             "tts.available" -> if (tts.voices.value.isNotEmpty()) CapabilityStatus.AVAILABLE else CapabilityStatus.NOT_CONFIGURED
             "media.session_access", "media.playback_control" -> if (demoMedia || androidMedia.authorized()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
-            "navigation.available" -> if (androidNavigation.available("maps") || androidNavigation.available("waze")) CapabilityStatus.AVAILABLE else CapabilityStatus.UNSUPPORTED
+            "navigation.available" -> if (demoPlaces || androidNavigation.available("maps") || androidNavigation.available("waze")) CapabilityStatus.AVAILABLE else CapabilityStatus.UNSUPPORTED
             "navigation.google_maps" -> if (androidNavigation.available("maps")) CapabilityStatus.AVAILABLE else CapabilityStatus.UNSUPPORTED
             "navigation.waze" -> if (androidNavigation.available("waze")) CapabilityStatus.AVAILABLE else CapabilityStatus.UNSUPPORTED
             "contacts.access" -> if (contacts.permitted()) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
             "phone.dialer" -> if (contacts.dialerAvailable()) CapabilityStatus.AVAILABLE else CapabilityStatus.UNSUPPORTED
+            "places.available", "places.provider_configured" -> if (demoPlaces || BuildConfig.PLACES_ANDROID_API_KEY.isNotBlank()) CapabilityStatus.AVAILABLE else CapabilityStatus.NOT_CONFIGURED
             else -> CapabilityStatus.NOT_CONFIGURED
         }
     }
     private val capabilities = CapabilityRegistry(permissionProvider)
-    private val tools = ToolRegistry(PolicyEngine(capabilities), vehicle, media, navigation, contacts)
+    private val tools = ToolRegistry(PolicyEngine(capabilities), vehicle, media, navigation, contacts, places)
     private val aiProvider = OpenAICompatibleProvider(
         { mutable.value.preferences.ai }, { secrets.get() }, AndroidHTTPTransport(),
         allowLocalHttp = (app.applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0,
@@ -155,6 +185,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch { obd.capabilities.collect { supported ->
             mutable.update { it.copy(obdCapabilities = supported.map { pid -> pid.wire }.toSet()) }
         } }
+        viewModelScope.launch { places.state.collect { current -> mutable.update { it.copy(places = current) } } }
     }
 
     fun foreground() {
@@ -166,6 +197,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
         ticker = viewModelScope.launch {
             while (true) {
+                if (stationaryPlaces && !stationaryValid()) setPlacesStationary(false)
                 androidMedia.refresh()
                 refreshMedia(); refreshCapabilities()
                 val snapshot = vehicle.snapshot()
@@ -174,7 +206,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
     }
-    fun background() { ticker?.cancel(); ticker = null; cancel(); androidMedia.close(); if (obd.state.value != VehicleConnectionState.SIMULATED) obd.disconnect() }
+    fun background() { ticker?.cancel(); ticker = null; setPlacesStationary(false); cancel(); androidMedia.close(); if (obd.state.value != VehicleConnectionState.SIMULATED) obd.disconnect() }
     fun refreshPairedBluetooth() {
         try {
             if (!bluetooth.present()) {
@@ -210,6 +242,22 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         deviceDiagnostics.local(current.preferences.ai, current.credentialSaved,
             if (current.vehicleConnection == VehicleConnectionState.SIMULATED) "SIMULATED" else "REAL",
             current.obdCapabilities).forEach(diagnosticHistory::record)
+        val now = clock.now()
+        val locationAllowed = androidLocation.permitted()
+        diagnosticHistory.record(DiagnosticCheck("places.location_permission", "places", if (locationAllowed) DiagnosticStatus.PASS else DiagnosticStatus.PENDING,
+            EvidenceLevel.PENDING, now, description = if (locationAllowed) "Ubicación aproximada o precisa autorizada; GPS no verificado." else "Permiso de ubicación pendiente o denegado."))
+        current.places.location?.let { fix -> diagnosticHistory.record(DiagnosticCheck("places.location_source", "places",
+            if (fix.availability == LocationAvailability.AVAILABLE) DiagnosticStatus.PASS else DiagnosticStatus.PENDING,
+            if (demoPlaces) EvidenceLevel.FAKE else EvidenceLevel.PENDING, now,
+            description = "Fuente ${fix.source.take(40)}; precisión informada ${fix.accuracyMeters?.toInt()?.toString() ?: "desconocida"} m; estado ${fix.availability.name}. Sin coordenadas.")) }
+        diagnosticHistory.record(DiagnosticCheck("places.provider", "places", if (demoPlaces || current.placesConfigured) DiagnosticStatus.PASS else DiagnosticStatus.PENDING,
+            EvidenceLevel.PENDING, now, description = if (demoPlaces) "Proveedor de simulación activo; sin consulta externa." else if (current.placesConfigured)
+                "Google Places configurado; respuesta real sin verificar." else "Google Places no configurado."))
+        diagnosticHistory.record(DiagnosticCheck("places.consent", "places", if (placesConsent) DiagnosticStatus.PASS else DiagnosticStatus.PENDING,
+            EvidenceLevel.PENDING, now, description = if (placesConsent) "Consulta externa autorizada para esta sesión." else "Sin autorización de Places."))
+        listOf("maps", "waze").forEach { name -> diagnosticHistory.record(DiagnosticCheck("navigation.$name", "navigation",
+            if (androidNavigation.available(name)) DiagnosticStatus.PASS else DiagnosticStatus.PENDING, EvidenceLevel.PENDING, now,
+            description = "$name ${if (androidNavigation.available(name)) "resuelve un intent" else "no disponible"}; apertura real sin verificar.")) }
     }
     fun checkBluetoothDiagnostics() {
         runLocalDiagnostics()
@@ -251,6 +299,40 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         mutable.update { it.copy(credentialSaved = false, notice = "Credencial eliminada.") }
     }
     fun clearConversation() { assistant.clearAllConversations(); mutable.update { it.copy(notice = "Conversación borrada.") } }
+    fun setDemoPlaces(enabled: Boolean) {
+        demoPlaces = enabled; places.clear(); refreshCapabilities()
+        mutable.update { it.copy(places = places.state.value.copy(status = if (enabled) "DEMO_READY" else if (it.placesConfigured) "READY" else "NOT_CONFIGURED"),
+            notice = if (enabled) "Lugares de demostración; sin consulta real." else "Demostración desactivada.") }
+    }
+    fun setPlacesConsent(allowed: Boolean) {
+        placesConsent = allowed
+        if (!allowed) places.clear()
+        mutable.update { it.copy(placesConsent = allowed) }
+    }
+    fun setPlacesStationary(confirmed: Boolean) {
+        stationaryPlaces = confirmed
+        stationaryConfirmedAt = if (confirmed) clock.now() else 0
+        mutable.update { it.copy(placesStationary = confirmed) }
+    }
+    fun searchPlaces(category: PlaceCategory) { viewModelScope.launch {
+        val started = SystemClock.elapsedRealtime()
+        val result = tools.execute(ToolRequest("places.search_nearby", mapOf("query" to category.label)))
+        diagnosticHistory.record(DiagnosticCheck("places.search", "places",
+            if (result.executionStatus == ExecutionStatus.SUCCESS) DiagnosticStatus.PASS else DiagnosticStatus.FAIL,
+            if (demoPlaces) EvidenceLevel.FAKE else EvidenceLevel.PENDING, clock.now(),
+            (SystemClock.elapsedRealtime() - started).coerceAtLeast(0), result.errorCode,
+            if (demoPlaces) "Consulta de simulación; respuesta ${places.state.value.status}." else "Consulta Google Places; respuesta ${places.state.value.status}."))
+        mutable.update { it.copy(notice = result.message) }
+    } }
+    fun selectPlace(id: String) { viewModelScope.launch {
+        val result = tools.execute(ToolRequest("places.select_result", mapOf("id" to id)))
+        mutable.update { it.copy(notice = result.message) }
+    } }
+    fun openSelectedPlace(provider: String) { viewModelScope.launch {
+        val result = tools.execute(ToolRequest("navigation.open_selected_place", mapOf("provider" to provider)))
+        mutable.update { it.copy(notice = result.message) }
+    } }
+    fun clearPlaces() { places.clear(); mutable.update { it.copy(notice = "Resultados temporales borrados.") } }
     fun testProvider() { viewModelScope.launch {
         val started = SystemClock.elapsedRealtime()
         val result = aiProvider.generate(AIRequest("Responde solo: conexión disponible."))

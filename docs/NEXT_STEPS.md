@@ -9,3 +9,7 @@ Sprint 4 implementa la infraestructura de diagnóstico. `SPRINT4_REPORT.md` cont
 5. Reparar las incompatibilidades reproducidas y repetir la matriz ligada al SHA-256 del APK. Considerar el envío de contexto vehicular solo en una revisión posterior, con consentimiento específico, minimización, TTL y revocación implementados.
 
 Antes de publicar una PR, repetir Python, JVM, Android unit/instrumentación, lint, `check_repository.py`, `git diff --check`, firma y SHA-256. El push, merge y release requieren autorización separada.
+
+## Después de Sprint 5
+
+Configurar una clave Android restringida, facturación y límites de Google Places en un proyecto de prueba; verificar búsqueda real, atribuciones, cuotas y errores con dispositivo concreto. Ensayar permiso aproximado y revocación, Maps/Waze instalados y GPS en laboratorio detenido. Completar por separado la matriz física OBD y voz de `PHYSICAL_VALIDATION_MATRIX.md`. No declarar ruta activa ni ETA por un intent aceptado. Véanse `PLACES_PROVIDER_SETUP.md` y `SPRINT5_REPORT.md`.

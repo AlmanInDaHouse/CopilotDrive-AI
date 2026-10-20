@@ -33,7 +33,10 @@ class ToolRegistry(
     private val media: MediaSourceAdapter,
     private val navigation: NavigationProvider,
     private val contacts: ContactProvider,
+    private val places: PlacesController? = null,
 ) {
+    fun placeResults(): List<PlaceSearchResult> = places?.state?.value?.results.orEmpty()
+    fun selectedPlaceId(): String? = places?.selected()?.providerId
     val definitions = listOf(
         ToolDefinition("vehicle.get_fuel", "vehicle.fuel"),
         ToolDefinition("vehicle.get_range", "vehicle.fuel"),
@@ -47,7 +50,9 @@ class ToolRegistry(
         ToolDefinition("navigation.open_destination", "navigation.available", setOf("destination", "provider")),
         ToolDefinition("contacts.search", "contacts.access", setOf("name")),
         ToolDefinition("phone.open_dialer", "phone.dialer", setOf("number"), requiresConfirmation = true),
-        ToolDefinition("places.search_nearby", "places.provider_configured", setOf("query")),
+        ToolDefinition("places.search_nearby", "places.available", setOf("query"), timeoutMs = 15_000),
+        ToolDefinition("places.select_result", "places.available", setOf("id")),
+        ToolDefinition("navigation.open_selected_place", "navigation.available", setOf("provider")),
     ).associateBy { it.id }
 
     suspend fun execute(request: ToolRequest, confirmedNumber: String? = null): ToolResult {
@@ -114,6 +119,15 @@ class ToolRegistry(
             require(NavigationUris.validPhone(number))
             contacts.openDialer(number)
         }
+        "places.search_nearby" -> {
+            val category = PlaceCategory.fromQuery(request.arguments.getValue("query"))
+                ?: return ToolResult.denied(request.toolId, "INVALID_CATEGORY", "Categoría de lugar no válida.")
+            places?.search(category) ?: ToolResult.denied(request.toolId, "NOT_CONFIGURED", "Proveedor de lugares no configurado.")
+        }
+        "places.select_result" -> places?.select(request.arguments.getValue("id"))
+            ?: ToolResult.denied(request.toolId, "NOT_CONFIGURED", "Proveedor de lugares no configurado.")
+        "navigation.open_selected_place" -> places?.open(request.arguments.getValue("provider"))
+            ?: ToolResult.denied(request.toolId, "NOT_CONFIGURED", "Proveedor de lugares no configurado.")
         else -> ToolResult.denied(request.toolId, "NOT_CONFIGURED", "El proveedor de lugares no está configurado.")
     }
 

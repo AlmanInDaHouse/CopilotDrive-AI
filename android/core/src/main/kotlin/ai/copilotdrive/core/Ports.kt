@@ -15,7 +15,6 @@ interface ContactProvider {
     suspend fun search(name: String): List<Contact>
     suspend fun openDialer(number: String): ToolResult
 }
-fun interface PlacesProvider { suspend fun searchNearby(query: String): List<Place> }
 fun interface PermissionProvider { fun status(capability: String): CapabilityStatus }
 fun interface AIProvider { suspend fun generate(request: AIRequest): AIResponse }
 interface SpeechToTextProvider {

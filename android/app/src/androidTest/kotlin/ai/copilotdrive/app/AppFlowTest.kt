@@ -60,4 +60,32 @@ class AppFlowTest {
         compose.onNodeWithText("Borrar historial").performClick()
         compose.onNodeWithText("Sin comprobaciones en esta sesión.").assertExists()
     }
+
+    @Test fun placesDemoSearchSelectOpenAndReturnToLocalDashboard() {
+        compose.waitUntil(10_000) {
+            compose.onAllNodesWithTag("onboarding").fetchSemanticsNodes().isNotEmpty() ||
+                compose.onAllNodesWithTag("dashboard").fetchSemanticsNodes().isNotEmpty()
+        }
+        if (compose.onAllNodesWithTag("onboarding").fetchSemanticsNodes().isNotEmpty())
+            compose.onNodeWithTag("accept-onboarding").performScrollTo().performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("dashboard").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("open-places").performClick()
+        compose.onNodeWithTag("places-screen").assertExists()
+        compose.onNodeWithTag("places-screen").performScrollToNode(hasTestTag("places-stopped"))
+        compose.onNodeWithTag("places-stopped").performClick()
+        compose.onNodeWithTag("places-screen").performScrollToNode(hasTestTag("places-demo"))
+        compose.onNodeWithTag("places-demo").performClick()
+        compose.onNodeWithTag("places-screen").performScrollToNode(hasTestTag("search-RESTAURANT"))
+        compose.onNodeWithTag("search-RESTAURANT").performClick()
+        compose.waitUntil(5_000) { compose.onAllNodesWithTag("select-place-0").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("places-screen").performScrollToNode(hasTestTag("select-place-0"))
+        compose.onNodeWithTag("select-place-0").performClick()
+        compose.onNodeWithTag("places-screen").performScrollToNode(hasTestTag("open-selected-maps"))
+        compose.onNodeWithTag("open-selected-maps").performClick()
+        compose.onNodeWithTag("places-screen").performScrollToNode(hasText("Volver"))
+        compose.onNodeWithText("Volver").performClick()
+        compose.onNodeWithTag("dashboard").assertExists()
+        compose.onNodeWithTag("demo-fuel").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodes(hasText("Simulación. Combustible: 42 %", substring = true)).fetchSemanticsNodes().isNotEmpty() }
+    }
 }

@@ -14,7 +14,7 @@ import ai.copilotdrive.core.DiagnosticStatus
 import ai.copilotdrive.core.VoiceMetric
 
 @Composable
-fun DeviceLabScreen(model: DashboardViewModel, onBack: () -> Unit) {
+fun DeviceLabScreen(model: DashboardViewModel, onBack: () -> Unit, onPlaces: () -> Unit = {}) {
     val checks by model.diagnostics.collectAsStateWithLifecycle()
     val latencies by model.voiceLatencies.collectAsStateWithLifecycle()
     var providerWarning by remember { mutableStateOf(false) }
@@ -43,6 +43,7 @@ fun DeviceLabScreen(model: DashboardViewModel, onBack: () -> Unit) {
                 Eyebrow("PRUEBAS ACTIVAS")
                 OutlinedButton(onClick = { voiceWarning = true }) { Text("Prueba acústica TTS") }
                 OutlinedButton(onClick = { providerWarning = true }) { Text("Comprobar proveedor IA") }
+                OutlinedButton(onClick = onPlaces) { Text("Probar lugares desde Lugares") }
                 Text("La conexión OBD se inicia desde Ajustes con confirmación. Usa solo un vehículo detenido.", color = Muted)
             }
         }

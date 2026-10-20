@@ -127,3 +127,13 @@ Tras rebase sobre `origin/main` `74507bb` y corrección de frescura del simulado
 - `:app:lintDebug`: **0 errores, 10 avisos** (8 `GradleDependency`, 2 `UseKtx`). `:app:assembleDebug` y `:app:assembleDebugAndroidTest`: **BUILD SUCCESSFUL**.
 
 **Total Sprint 3: 81/81** (12 Python + 57 JVM + 12 instrumentadas). APK debug: 11.762.683 bytes, SHA-256 `6f09ee0dca6d667eec93c81ef15f573817a2fbd00542fc54ef76d876d78f322c`; firma debug v2 verificada. `adb install -r` y arranque de MainActivity funcionaron. La revisión manual confirmó el simulador después de 15 s de onboarding, respuesta escrita local ante TTS no disponible, permiso Bluetooth y mensaje de ausencia de adaptadores emparejados. No se conectó un ELM327 físico. Evidencia ampliada: `SPRINT3_REPORT.md` y archivos ignorados en `artifacts/`.
+
+## Sprint 5 — 2026-10-20, rama local `feat/sprint5-places-navigation`
+
+Baseline remoto `main` `4fea84d`: workflows [Tests](https://github.com/AlmanInDaHouse/CopilotDrive-AI/actions/runs/39365833566) y [Android](https://github.com/AlmanInDaHouse/CopilotDrive-AI/actions/runs/39365833567) terminaron `success`. No hay workflow remoto para esta rama local sin push.
+
+Validación final en Windows/JDK 17/SDK 35: `python -m unittest discover -s tests -v` **12/12**; Gradle `:core:test` **17/17**, `:testing:test` **56/56**, `:app:testDebugUnitTest` **2/2**, `:app:connectedDebugAndroidTest` en `CopilotDrive_API35` Android 15/API 35 **15/15**; total **102/102**. El comando conjunto incluyó `:app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest` y terminó `BUILD SUCCESSFUL`. Lint: **0 errores, 12 avisos**. `python scripts/check_repository.py` aprobó; `git diff --check` sin errores de contenido (avisos CRLF de Git en Windows).
+
+Las 15 instrumentadas incluyeron Lugares → demo etiquetada → búsqueda fake → selección → apertura simulada → dashboard, además de flujos anteriores de OBD, voz, IA loopback y Keystore. Smoke separado **1/1**: se instaló APK, se lanzó MainActivity (`pidof` confirmó proceso), se concedió y revocó `ACCESS_COARSE_LOCATION`, se desactivaron Wi-Fi y datos en el emulador y se ejecutó la consulta local de combustible de Jarvis. `BUILD SUCCESSFUL`; Wi-Fi y datos se restauraron a su estado previo. No se conectó Google Places, GPS físico, Maps/Waze real ni un vehículo.
+
+APK: `artifacts/CopilotDrive-AI-sprint5-debug.apk`, **19.825.143 bytes**, SHA-256 `49125CDEBFD8B1E8D8DA116A2F99180A988209EEF9C77E9A85C86C0669FF3291`. Hash idéntico al APK generado. `apksigner verify --verbose --print-certs`: `Verifies`, firma v2 `true`, un firmante debug; certificado SHA-256 `AD561B54E005E27E4CA2873963EE7F6C34C4E246FEB9EA76AA4CC2E2EB476A8A`. No es firma de producción.

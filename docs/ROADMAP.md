@@ -14,3 +14,6 @@ Estado real, sin equiparar código con prueba física: IMPLEMENTATION_STATUS.md 
 # Sprint 4 y siguiente
 
 Sprint 4 instala infraestructura de diagnóstico, harness y matriz de validación física sin declarar hardware verificado. Sprint 5 recomendado: ensayos con teléfonos, voces, adaptadores y coche concretos; reparar incompatibilidades medidas; medir latencia de voz con muestra suficiente. El intercambio de contexto vehicular requiere revisión independiente de minimización, consentimiento y revocación antes de activarse.\n
+## Sprint 5
+
+Lugares cercanos: contratos tipados, ubicación aproximada solicitada al buscar, consentimiento Google Places independiente de IA, proveedor oficial opcional, demostración determinista, selección temporal y handoff a Maps/Waze. La validación física de OBD, voz, GPS y aplicaciones de navegación sigue como trabajo independiente. Ver `SPRINT5_REPORT.md`.
