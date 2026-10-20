@@ -1,0 +1,37 @@
+[
+  {
+    "pid": "010C",
+    "response": "41 0C 1A F8 >",
+    "value": 1726.0
+  },
+  {
+    "pid": "010C",
+    "response": "41 0C 00 01 >",
+    "value": 0.2
+  },
+  {
+    "pid": "010C",
+    "response": "41 0C 1A >",
+    "value": null
+  },
+  {
+    "pid": "0105",
+    "response": "410580>",
+    "value": 88.0
+  },
+  {
+    "pid": "010D",
+    "response": "410D32>",
+    "value": 50.0
+  },
+  {
+    "pid": "012F",
+    "response": "412F80>",
+    "value": 50.2
+  },
+  {
+    "pid": "012F",
+    "response": "NO DATA",
+    "value": null
+  }
+]
