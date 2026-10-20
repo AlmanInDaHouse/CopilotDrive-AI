@@ -1,5 +1,9 @@
 # Sprint 8 — Android performance, interoperability and test readiness
 
+Actualización Sprint 9: Sprint 8 ya está fusionado mediante PR #9 en `504e9a7`.
+Android y Tests del merge terminaron success. El resto conserva la entrega local
+histórica anterior al merge; resultados nuevos en SPRINT9_REPORT.md.
+
 Entrega local de revisión, 2026-10-20 (Europe/Madrid). Verificación física PENDING.
 No push, PR, merge ni release de Sprint 8. APK convencional para Android abierto.
 

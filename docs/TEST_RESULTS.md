@@ -1,4 +1,53 @@
-# Sprint 8 — resultados ejecutados, 2026-10-20
+# Sprint 9 — resultados ejecutados, 2026-10-20
+
+Base: Sprint 8 fusionado por PR #9 en main `504e9a7`. Workflows del merge:
+[Android success](https://github.com/AlmanInDaHouse/CopilotDrive-AI/actions/runs/39423473557),
+[Tests success](https://github.com/AlmanInDaHouse/CopilotDrive-AI/actions/runs/39423473560).
+La rama Sprint 9 permanece local; esos workflows no son CI de esta rama.
+
+| Suite final | Casos | Resultado |
+| --- | ---: | --- |
+| Python unittest | 45 | PASS |
+| Core JVM | 43 | PASS, ejecución forzada |
+| Testing JVM | 67 | PASS, ejecución forzada |
+| App unit | 6 | PASS |
+| Android instrumentado API26 / Android 8.0 | 34 | PASS |
+| Android instrumentado API30 / Android 11 | 34 | PASS |
+| Android instrumentado API35 / Android 15 | 34 | PASS |
+
+195 casos distintos: 45+43+67+6+34. La matriz ejecutó102 casos instrumentados
+(34×3); repeticiones, stress y Macrobenchmark no se suman como nuevos tests.
+Baseline Sprint 8: Python 36/core 43/testing 67/app 6/Android 32=184, incluido el APK
+histórico C23F…0EA2 y 32 instrumentadas directas aprobadas en AVD35 desechable.
+
+Build debug, AndroidTest y benchmark: PASS. Lint: 0 errores y 12 avisos existentes.
+Repository check y git diff check: PASS. Se conserva el primer build fallido por
+argumento PowerShell dividido y el fallo de compilación de Ignore sin opt-in;
+la invocación estructurada y el opt-in explícito resolvieron ambos. No se suprimió
+ninguna advertencia de calidad de benchmark salvo EMULATOR.
+
+APK final: artifacts/sprint9/CopilotDrive-AI-sprint9-debug.apk, 19736019 bytes.
+SHA-256: `501b01a1a48466718a185160c9fda40ce30d80efe217c76b2ad9879e1bc08d5c`.
+Firma Android Debug verificada; certificado SHA-256
+`ad561b54e005e27e4ca2873963ee7f6c34c4e246feb9ea76aa4cc2e2eb476a8a`.
+minSdk 26/targetSdk 35. Mismo APK y AndroidTest `fb098e17…52b1f2e0` verificados en
+las tres versiones antes/después de am instrument; sin connectedAndroidTest.
+
+MainActivity/onboarding/dashboard, widgets/presets/DataStore, Device Lab, catálogo
+de voz, permisos, MediaSession fixture, Jarvis local, Places demo/sin proveedor y
+cierre del ViewModel se ejecutaron en las tres APIs. Rotación/foreground en 26/30/35;
+Jarvis con transportes desactivados aprobado en 30/35. Offline26: BLOCKED, svc wifi
+termina137; red observada de nuevo en su estado original 1/1, intentos conservados.
+No se elimina ese resultado negativo ni se convierte en una prueba offline válida.
+
+Estabilidad:100 ciclos sostenidos y 20 reinicios, 330627 ms, 0 crash/ANR observados
+en historial acotado API35; configuración y hashes restaurados/verificados. Host
+terminó con presión física: comparación PSS INCONCLUSIVE. Ver MEMORY_INVESTIGATION.
+Jank, trazas y comparaciones: JANK_INVESTIGATION/PERFORMANCE_COMPARISON/SPRINT9_REPORT.
+Hardware físico, acústica, TalkBack humano, ELM327/vehículo y proveedores comerciales:
+PENDING. Los AVDs no producen evidencia PHYSICALLY_VERIFIED.
+
+## Histórico — Sprint 8 antes del merge
 
 Base main328ffec, Sprint 7/PR#8 fusionado, Android/Tests del merge success.
 Sprint 8 local, sin push/PR/merge/release. App debug compilada desde 259af8d;

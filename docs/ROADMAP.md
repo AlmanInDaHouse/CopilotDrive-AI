@@ -22,7 +22,7 @@ Lugares cercanos: contratos tipados, ubicación aproximada solicitada al buscar,
 
 Dashboard modular implementado: ocho widgets nativos, registro cerrado, cuadrícula lógica, presets Classic/Driver/Media/Laboratory, editor seguro en laboratorio, DataStore versionado, recuperación y pruebas. Evidencia y límites en `SPRINT6_REPORT.md`. Sprint 7 recomendado: completar matriz física de pantallas/voz/OBD/MediaSession/GPS/Maps/Waze y resolver incompatibilidades observadas; sin habilitar edición en conducción.
 
-## Sprint 7 fusionado, Sprint 8 local y Sprint 9 propuesto
+## Sprint 7/8 fusionados, Sprint 9 local
 
 Sprint 7/PR #8 fusionado en `328ffec`, con CI Android/Tests aprobado. Sprint 7 implementa contratos
 de calificación y runner consentido con hashes/firma, semántica accesible, limpieza y
@@ -30,5 +30,7 @@ recuperación de voz, revalidación de consentimiento Places y mediciones del em
 Ver SPRINT7_REPORT para resultados. La certificación física sigue PENDING.
 Sprint 8 añade TTID/TTFD instrumentados, benchmark aislado, contratos de rendimiento,
 runner de estabilidad restaurable y correcciones mínimas en IO/MediaSession. Resultados
-y límites en SPRINT8_REPORT; rama local sin publicación. Sprint 9 propuesto: hardware,
-TalkBack/acústica/OBD detenido, API26/30 y proveedores con cuota/consentimiento (NEXT_STEPS).
+y límites en SPRINT8_REPORT. Sprint 8 ya está fusionado por PR #9, main `504e9a7`,
+con Android y Tests del merge en success. Sprint 9 investiga jank con Perfetto,
+memoria y compatibilidad API26/30/35; hardware consentido sigue independiente.
+Ver SPRINT9_REPORT y NEXT_STEPS para resultados y pendientes reales.

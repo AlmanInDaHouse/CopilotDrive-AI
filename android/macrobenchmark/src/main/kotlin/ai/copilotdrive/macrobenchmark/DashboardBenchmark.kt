@@ -7,6 +7,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import androidx.test.uiautomator.By
 import androidx.test.uiautomator.Direction
 import androidx.test.uiautomator.Until
+import androidx.test.uiautomator.StaleObjectException
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,6 +18,12 @@ class DashboardBenchmark {
     @get:Rule val benchmark = MacrobenchmarkRule()
     private val target = "ai.copilotdrive.app.benchmark"
     private val iterations get() = InstrumentationRegistry.getArguments().getString("iterations", "20").toInt().also { require(it in 1..100) }
+    @OptIn(ExperimentalMacrobenchmarkApi::class)
+    private val compilation: CompilationMode get() = when (InstrumentationRegistry.getArguments().getString("compilation", "None")) {
+        "Ignore" -> CompilationMode.Ignore() // Never reset compilation or reinstall data on old APIs.
+        "None" -> { check(android.os.Build.VERSION.SDK_INT >= 34) { "DESTRUCTIVE_RESET_ON_OLDER_API" }; CompilationMode.None() }
+        else -> error("UNKNOWN_COMPILATION_STRATEGY")
+    }
     private fun MacrobenchmarkScope.waitDashboard() {
         check(device.wait(Until.hasObject(By.res("dashboard")), 15_000)) { "DASHBOARD_NOT_READY" }
         check(device.wait(Until.hasObject(By.res("push-to-talk")), 5_000)) { "CONTROLS_NOT_READY" }
@@ -25,14 +32,28 @@ class DashboardBenchmark {
     }
     private fun MacrobenchmarkScope.prepare() {
         startActivityAndWait()
-        val accept = device.wait(Until.findObject(By.res("accept-onboarding")), 2_000)
+        var accept = device.wait(Until.findObject(By.res("accept-onboarding")), 2_000)
+        // Fresh disposable AVDs may place the final consent button below the fold.
+        // Setup stays outside the measured window; never infer consent from launch.
+        val onboarding = device.findObject(By.res("onboarding"))
+        if (onboarding != null && accept == null) {
+            val bounds = onboarding.visibleBounds
+            onboarding.setGestureMargin(minOf(bounds.width(), bounds.height()) / 10)
+            repeat(8) {
+                if (accept == null) {
+                    onboarding.swipe(Direction.UP, .7f, 800)
+                    device.waitForIdle()
+                    accept = device.findObject(By.res("accept-onboarding"))
+                }
+            }
+        }
         accept?.click()
         waitDashboard()
         pressHome()
     }
     private fun startup(mode: StartupMode) = benchmark.measureRepeated(
         packageName = target, metrics = listOf(StartupTimingMetric()), iterations = iterations,
-        compilationMode = CompilationMode.None(), startupMode = mode,
+        compilationMode = compilation, startupMode = mode,
         setupBlock = { prepare() },
     ) { startActivityAndWait(); waitDashboard() }
     @Test fun coldStartup() = startup(StartupMode.COLD)
@@ -41,20 +62,29 @@ class DashboardBenchmark {
 
     private fun journey(action: MacrobenchmarkScope.() -> Unit) = benchmark.measureRepeated(
         packageName = target, metrics = listOf(FrameTimingMetric()), iterations = iterations,
-        compilationMode = CompilationMode.None(), setupBlock = { prepare(); startActivityAndWait(); waitDashboard() },
+        compilationMode = compilation, setupBlock = { prepare(); startActivityAndWait(); waitDashboard() },
         measureBlock = action,
     )
+    private fun MacrobenchmarkScope.scrollHeaderTopOrMissing(): Int? {
+        repeat(3) {
+            try { return device.findObject(By.res("edit-dashboard"))?.visibleBounds?.top }
+            catch (_: StaleObjectException) { device.waitForIdle() }
+        }
+        error("HEADER_OBSERVATION_UNSTABLE") // Never interpret repeated stale reads as movement.
+    }
     @Test fun dashboardScroll() = journey {
         val dashboard = device.findObject(By.res("dashboard"))
         check(dashboard.isScrollable) { "DASHBOARD_NOT_SCROLLABLE" }
         val bounds = dashboard.visibleBounds
         dashboard.setGestureMargin(minOf(bounds.width(), bounds.height()) / 10)
-        val headerBefore = checkNotNull(device.findObject(By.res("edit-dashboard"))).visibleBounds.top
+        val headerBefore = checkNotNull(scrollHeaderTopOrMissing()) { "HEADER_MISSING_BEFORE_SCROLL" }
         dashboard.swipe(Direction.UP, .8f, 800)
         device.waitForIdle()
-        val headerAfter = device.findObject(By.res("edit-dashboard"))?.visibleBounds?.top
+        val headerAfter = scrollHeaderTopOrMissing()
         check(headerAfter == null || headerAfter < headerBefore) { "SCROLL_DID_NOT_MOVE" }
-        dashboard.swipe(Direction.DOWN, .8f, 800)
+        val returnDashboard = checkNotNull(device.findObject(By.res("dashboard")))
+        returnDashboard.setGestureMargin(minOf(bounds.width(), bounds.height()) / 10)
+        returnDashboard.swipe(Direction.DOWN, .8f, 800)
         device.waitForIdle()
     }
     @Test fun settingsAndLab() = journey {

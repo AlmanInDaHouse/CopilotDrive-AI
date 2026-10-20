@@ -28,6 +28,26 @@ def require_framework(device):
         raise QualificationError('ANDROID_FRAMEWORK_UNAVAILABLE')
 
 
+@contextmanager
+def protected_debug_state(device, report):
+    """Benchmark isolation is checked even if instrumentation raises or times out."""
+    def fingerprint():
+        path = device.shell('pm', 'path', PACKAGE)
+        match = re.search(r'^package:(.+base\.apk)$', path, re.M)
+        return (path, device.shell('sha256sum', match[1]).split()[0], layout_hash(device)) if match else (path, None, None)
+    before = fingerprint()
+    report['protectedDebugApkSha256'] = before[1]
+    report['protectedLayoutSha256'] = before[2]
+    try:
+        yield
+    finally:
+        report['protectedDebugState'] = 'UNVERIFIED'
+        after = fingerprint()
+        report['protectedDebugState'] = 'PRESERVED' if before == after else 'FAILED'
+        if before != after:
+            raise QualificationError('PROTECTED_DEBUG_STATE_CHANGED')
+
+
 def pss_kib(output):
     match = re.search(r'TOTAL PSS:\s*(\d+)', output) or re.search(r'^\s*TOTAL\s+(\d+)', output, re.M)
     if not match or int(match[1]) <= 0:
@@ -83,10 +103,12 @@ def main(argv=None):
     parser.add_argument('--apk', type=Path, required=True)
     parser.add_argument('--expected-sha256', required=True)
     parser.add_argument('--cycles', type=int, default=20)
+    parser.add_argument('--restart-cycles', type=int, help='Separate fresh-process population; defaults to --cycles')
     parser.add_argument('--allow-active', action='store_true')
     parser.add_argument('--dry-run', action='store_true')
     parser.add_argument('--out', type=Path, default=ROOT / 'artifacts/sprint8/stability.json')
     args = parser.parse_args(argv)
+    restart_cycles = args.cycles if args.restart_cycles is None else args.restart_cycles
     report = dict(schemaVersion=1, status='PENDING', physicalQualification='PENDING',
         evidenceLevel='PENDING', measurementKind='FUNCTIONAL_AND_EXTERNAL_MEMORY',
         commit=command(['git', '-C', ROOT, 'rev-parse', 'HEAD']), samples=[],
@@ -94,8 +116,9 @@ def main(argv=None):
         excluded=['real audio', 'real OBD', 'paid providers', 'contacts', 'navigation intents'])
     report['workingTreeDirty'] = bool(command(['git', '-C', ROOT, 'status', '--porcelain']))
     try:
-        if not 1 <= args.cycles <= 1000:
+        if not 1 <= args.cycles <= 1000 or not 1 <= restart_cycles <= 1000:
             raise QualificationError('INVALID_CYCLE_COUNT')
+        report.update(sustainedCycles=args.cycles, restartCycles=restart_cycles)
         adb = find_adb(args.adb)
         if dict(devices(command([adb, 'devices', '-l']))).get(args.serial) != 'device':
             raise QualificationError('TARGET_NOT_AUTHORIZED')
@@ -136,6 +159,10 @@ def main(argv=None):
                 # Whitelist the numeric contract even though it comes from our test APK.
                 report['sustainedProcessSamples'] = [{key: int(item[key]) for key in
                     ('cycle', 'elapsedMs', 'instrumentedPssKiB')} for item in raw_memory]
+                for sample, raw in zip(report['sustainedProcessSamples'], raw_memory):
+                    for key in ('javaHeapAllocatedKiB', 'nativeHeapAllocatedKiB', 'graphicsPssKiB',
+                                'oldActivitiesWeakLive', 'viewModelDirectJobs'):
+                        sample[key] = int(raw[key]) if raw.get(key) is not None else None
                 raw_operations = json.loads(device.shell('run-as', PACKAGE, 'cat', 'files/sprint8-operation-bounds.json'))
                 allowed_operations = {'presetDraft', 'backgroundRestore', 'settingsWithConfirmation', 'deviceLabWithScroll'}
                 report['operationUpperBounds'] = [dict(operation=item['operation'], upperBoundMs=float(item['upperBoundMs']))
@@ -143,7 +170,7 @@ def main(argv=None):
                 if exit_info_supported:
                     observed_exits.update(exit_events(device.shell('dumpsys', 'activity', 'exit-info', PACKAGE)))
                 device.shell('settings', 'put', 'system', 'accelerometer_rotation', '0')
-                for index in range(args.cycles):
+                for index in range(restart_cycles):
                     device.shell('settings', 'put', 'system', 'user_rotation', str(index % 2))
                     device.shell('am', 'force-stop', PACKAGE)
                     device.shell('am', 'start', '-W', '-n', COMPONENT)
@@ -155,7 +182,7 @@ def main(argv=None):
                         raise QualificationError('LAYOUT_CHANGED')
                     if exit_info_supported:
                         observed_exits.update(exit_events(device.shell('dumpsys', 'activity', 'exit-info', PACKAGE)))
-                    print(f'cycle {index + 1}/{args.cycles}', flush=True)
+                    print(f'restart {index + 1}/{restart_cycles}', flush=True)
             reasons = [reason for key, reason in observed_exits.items() if key not in initial_exits]
             report.update(crashesObserved=(reasons.count(4) + reasons.count(5)) if exit_info_supported else None,
                 anrsObserved=reasons.count(6) if exit_info_supported else None,
@@ -166,6 +193,11 @@ def main(argv=None):
                 evidenceLevel='EMULATOR', status='EMULATOR_TESTED')
             if report['crashesObserved'] or report['anrsObserved']:
                 report['status'] = 'FAILED'
+            for package, expected in ((PACKAGE, report['apkSha256']), (PACKAGE+'.test', report['testApkSha256'])):
+                installed = re.search(r'^package:(.+base\.apk)$', device.shell('pm', 'path', package), re.M)
+                if not installed or device.shell('sha256sum', installed[1]).split()[0] != expected:
+                    raise QualificationError('POST_STABILITY_APK_HASH_MISMATCH')
+            report['packageHashesVerifiedAfter'] = True
     except (QualificationError, ValueError, OSError) as failure:
         report.update(status='BLOCKED', errorCode=str(failure) if isinstance(failure, QualificationError) else 'INVALID_ENVIRONMENT')
     args.out.parent.mkdir(parents=True, exist_ok=True)

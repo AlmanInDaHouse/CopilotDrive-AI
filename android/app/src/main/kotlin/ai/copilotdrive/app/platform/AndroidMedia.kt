@@ -11,8 +11,8 @@ import android.media.session.PlaybackState
 import android.os.Handler
 import android.os.Build
 import android.os.Looper
+import android.provider.Settings
 import android.service.notification.NotificationListenerService
-import androidx.core.app.NotificationManagerCompat
 import ai.copilotdrive.core.*
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -39,7 +39,10 @@ class AndroidMediaAdapter(private val context: Context) : MediaSourceAdapter {
     fun authorized() = if (Build.VERSION.SDK_INT >= 27) {
         context.getSystemService(NotificationManager::class.java).isNotificationListenerAccessGranted(component)
     } else {
-        context.packageName in NotificationManagerCompat.getEnabledListenerPackages(context)
+        // Compat caches the previous package set when the setting becomes null.
+        // API26 must observe revocation immediately, for this exact listener.
+        Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
+            .orEmpty().split(':').any { ComponentName.unflattenFromString(it) == component }
     }
     private fun id(controller: MediaController) = "${controller.packageName}:${controller.sessionToken.hashCode()}"
 

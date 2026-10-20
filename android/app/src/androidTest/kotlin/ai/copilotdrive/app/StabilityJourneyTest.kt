@@ -4,6 +4,8 @@ import android.os.Build
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import androidx.test.platform.app.InstrumentationRegistry
 import ai.copilotdrive.app.platform.DataStoreLayoutRepository
 import ai.copilotdrive.app.platform.Preferences
@@ -23,6 +25,15 @@ class StabilityJourneyTest {
     private fun action(container: String, tag: String) {
         compose.onNodeWithTag(container).performScrollToNode(hasTestTag(tag))
         compose.onNodeWithTag(tag).performClick()
+    }
+    @Test fun finishingActivityCancelsViewModelJobs() {
+        lateinit var model: DashboardViewModel
+        compose.runOnIdle { model = ViewModelProvider(compose.activity)[DashboardViewModel::class.java] }
+        val owner = requireNotNull(model.viewModelScope.coroutineContext[kotlinx.coroutines.Job])
+        assertTrue(owner.isActive)
+        compose.activityRule.scenario.close()
+        assertFalse(owner.isActive)
+        assertTrue(owner.children.none { it.isActive })
     }
     @Test fun restoredSettingsDoesNotDeclareDashboardReady() {
         val preferences = Preferences(compose.activity.applicationContext)
@@ -51,6 +62,9 @@ class StabilityJourneyTest {
         require(count in 1..1000)
         val memory = org.json.JSONArray()
         val operations = org.json.JSONArray()
+        val oldActivities = mutableListOf<java.lang.ref.WeakReference<MainActivity>>()
+        val model = ViewModelProvider(compose.activity)[DashboardViewModel::class.java]
+        val process = android.os.Process.myPid()
         fun measure(name: String, action: () -> Unit) {
             val at = android.os.SystemClock.elapsedRealtimeNanos()
             action(); compose.waitForIdle()
@@ -86,12 +100,22 @@ class StabilityJourneyTest {
                 compose.onNodeWithTag("places-screen").assertExists()
                 compose.runOnIdle { compose.activity.onBackPressedDispatcher.onBackPressed() }
                 dashboard()
+                oldActivities += java.lang.ref.WeakReference(compose.activity)
                 compose.activityRule.scenario.recreate()
                 dashboard()
+                assertSame(model, ViewModelProvider(compose.activity)[DashboardViewModel::class.java])
+                assertEquals(process, android.os.Process.myPid())
                 assertEquals(originalLayout, runBlocking { layout.state.first().layout })
+                val info = android.os.Debug.MemoryInfo().also { android.os.Debug.getMemoryInfo(it) }
+                val runtime = Runtime.getRuntime()
                 memory.put(org.json.JSONObject().put("cycle", index + 1)
                     .put("elapsedMs", android.os.SystemClock.elapsedRealtime() - started)
-                    .put("instrumentedPssKiB", android.os.Debug.getPss()))
+                    .put("instrumentedPssKiB", info.totalPss)
+                    .put("javaHeapAllocatedKiB", (runtime.totalMemory() - runtime.freeMemory()) / 1024)
+                    .put("nativeHeapAllocatedKiB", android.os.Debug.getNativeHeapAllocatedSize() / 1024)
+                    .put("graphicsPssKiB", info.getMemoryStat("summary.graphics")?.toIntOrNull() ?: org.json.JSONObject.NULL)
+                    .put("oldActivitiesWeakLive", oldActivities.count { it.get() != null })
+                    .put("viewModelDirectJobs", model.viewModelScope.coroutineContext[kotlinx.coroutines.Job]?.children?.count() ?: 0))
             }
         } finally {
             runBlocking { preferences.save(originalPreferences) }

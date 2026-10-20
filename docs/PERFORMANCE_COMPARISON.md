@@ -1,4 +1,40 @@
-# Comparación de rendimiento — Sprint 8
+# Comparación de rendimiento — Sprints 8 y 9
+
+## Sprint 9 — repetición forense, mismo binario
+
+Sprint 8 ya está fusionado por PR #9 (`504e9a7`). Nueva tanda de 20 iteraciones
+por escenario, mismo AVD/API35/1280×800/160dpi/fontScale 1, CompilationMode.None,
+APK benchmark `168ebeeb…d3ef9` y runner original instalado `c43d08d8…87849`.
+GLES efectivo: Google SwiftShader4.0.0.1. No hay cambio de código de producto.
+Gradle/instalaciones/descargas SDK no se ejecutaron durante estas tandas.
+ActivityManager, memoria/paginación del host y preservación se comprobaron en
+los extremos; no es monitorización continua ni prueba de CPU/temperatura fijadas.
+
+| Escenario | CPU ms p50/p95 Sprint9 | Overrun ms p50/p95 Sprint9 | Frames | Overrun positivo S8 → S9 |
+| --- | ---: | ---: | ---: | ---: |
+| dashboardScroll | 31.81 / 52.71 | 25.51 / 52.62 | 1901 | 97.04% → 98.00% |
+| settingsAndLab | 27.13 / 76.29 | 14.55 / 126.57 | 407 | 84.26% → 77.15% |
+| presetDraft | 24.86 / 57.80 | 11.82 / 68.95 | 628 | 65.70% → 70.70% |
+| backgroundRestore | 16.32 / 45.39 | 2.90 / 35.21 | 53 | 61.82% → 60.38% |
+
+Percentiles nearest-rank de la población de frames, no de 20 tiempos de arranque.
+Las regresiones y diferencias favorables se conservan. Misma metodología/display/
+binario, pero el estado del host histórico no está controlado: comparación
+exploratoria, sin significación estadística ni causalidad del código.
+
+Se analizaron 80 trazas antiguas y 80 nuevas. En scroll nuevo, la mediana por ventana
+de Main postAndWait es1218.30 ms, RenderThread Running del guest1239.21 ms y
+Compose:recompose4.53 ms: persiste una ruta gráfica costosa. Las veinte trazas de
+retorno de cada cohorte tienen systrace_parse_failure; se marcan REVIEW_REQUIRED.
+Los frames nativos se conservan, con limitación explícita de interpretación causal.
+Detalles, hipótesis y auditoría en JANK_INVESTIGATION; datos crudos en
+artifacts/sprint9/macro y resúmenes en repeat-forensics.json. No se suman tiempos
+inclusivos ni se presenta Running del guest como CPU exclusiva física.
+
+El crecimiento PSS y la compatibilidad se evalúan separadamente en
+MEMORY_INVESTIGATION y ANDROID_API_COMPATIBILITY. Ningún nuevo presupuesto de CI.
+
+## Evidencia histórica Sprint 8
 
 API35/Android 15 x86_64; 1280×800px/160dpi/fontScale1, simulador onboarded, sin
 proveedores externos. Baseline APK Sprint 7 F85A…F0D01 y APK Sprint 8 C23F86E1B7DC7F3DEA05D9AF6E41374EF2B79A58D1227B302B7CA1AB12400EA2.
@@ -83,3 +119,53 @@ Las cotas de cambio de preset/Ajustes/Lab/retorno, medidas por el harness con
 sincronización y scroll, figuran en STABILITY_TEST_REPORT. No son duración pura de
 la app ni métricas de frame. Método, comandos, fuentes oficiales y extracción de
 trazas en BENCHMARK_RUNBOOK. Raw logs/Perfetto requieren revisión antes de compartir.
+
+## Sprint 9 — binario final y experimento de renderer
+
+Target benchmark SHA-256:
+`e2f19020b3c754ea80b520f98169648436069f4eb8d0fddc773ea6180b2a0388`.
+Código de producto `5790f71`; variante benchmark independiente, no debug APK 501B.
+Mismo AVD API35, 1280×800/160dpi/fontScale 1, None y 20 iteraciones solicitadas.
+GLES efectivo Radeon: Android Emulator OpenGL ES Translator (AMD Radeon RX 6600),
+OpenGL ES 3.1; al terminar se volvió a Google SwiftShader 4.0.0.1, OpenGL ES 3.0.
+Fingerprints RESTORED.
+
+| Observación del binario final | Estado | Frames | CPU p50/p95 ms | Overrun p50/p95 ms | Overrun positivo |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Radeon, runner anterior al ajuste de nodo | EMULATOR_BENCHMARKED | 1834 | 22.70 /44.50 | 8.24 /42.84 | 84.46% |
+| SwiftShader, runner con reacquisición de nodo | INVALID_HOST | 1956 | 30.33 /48.84 | 23.80 /48.76 | 94.38% |
+
+La fila inválida conserva datos, **no entra en una comparación de mejora**. El
+host de Radeon pasó las guardas (RAM disponible876–1026 MiB antes, 1046–1070 después).
+SwiftShader terminó con 278–369 MiB y además cambió el APK del runner:15850fc3…
+frente a 6217590f…; el APK de la app sí coincide. No existe una pareja válida con
+idéntico runner/host que permita atribuir una mejora porcentual al renderer ni al
+código. La variación observada es consistente con contribución del entorno gráfico;
+84.46% de overrun positivo sigue siendo jank alto y queda sin explicación completa.
+
+En Radeon, medianas por ventana: Main Running 267.68 ms, postAndWait 606.16 ms,
+Compose:recompose3.40 ms, RenderThread Running 979.76 ms y eglSwapBuffers 595.50 ms.
+La ruta de dibujo/buffers sigue siendo visible. No se suman tiempos inclusivos ni
+se convierte Running del guest en CPU física exclusiva. La comparación con la
+serie inicial de otro APK tampoco es una optimización de producto.
+
+Intentos conservados:
+
+- Primera tanda final SwiftShader bloqueada antes de medir por RAM<512 MiB.
+- Otro intento produjo10 trazas y falló en StaleObjectException al salir el header
+  de LazyColumn. Se conservó en invalid/final-scroll-stale-object; no se calculan
+  percentiles de un recorrido incompleto. La referencia se reacquiere y repetidos
+  stale provocan fallo explícito, no una assertion de movimiento aprobada.
+- Repetición corregida:20 iteraciones/JSON nativo, pero host final bajo el mínimo;
+  raw en invalid/final-scroll-host-pressure, no promoción a muestra válida.
+- Nueva campaña Radeon con el runner corregido: BLOCKED antes de medir por RAM.
+  coldStartup/warmStartup/hotStartup/settingsAndLab/presetDraft/backgroundRestore
+  de esa campaña quedaron NOT_RUN por la misma precondición, con métricas ausentes.
+
+No hay TTID/TTFD nuevos válidos del binario final ni una comparación causal cerrada.
+Se conserva la evidencia original de Sprint8 y las 80 trazas iniciales Sprint9 del
+mismo APK 168e… para caracterizar los cuatro escenarios. Se analizaron 200 trazas
+con SQL; otras10 del intento abortado permanecen como evidencia fallida. Hay130
+trazas nuevas Sprint9:100 de tandas que completaron las guardas y 30 de intentos
+inválidos/fallidos. El parseo de las 40 trazas de retorno de ambas series requiere
+revisión. Los estados de muestra y de parseo son independientes.
