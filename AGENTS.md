@@ -43,3 +43,9 @@ fake/emulator checks to physical verification. Device Lab passive checks may run
 network, acoustic and OBD actions require explicit user initiation. Diagnostic history is bounded,
 session-only and redacted; no automatic export. Use monotonic time for durations and wall time for
 timestamps. See `docs/PHYSICAL_VALIDATION_MATRIX.md` before claiming compatibility.
+
+Sprint 5: `PlacesController` in pure core owns session-only results and expiring selection. Android
+requests coarse location only when a search starts; the Google Places SDK is optional and requires
+separate session consent. Keep provider text out of AI prompts and diagnostics. Demo results and
+navigation must stay visibly simulated. Never infer ETA from straight-line distance. Keep the
+physical OBD, voice, GPS and Maps/Waze validation matrix pending until observed on devices.

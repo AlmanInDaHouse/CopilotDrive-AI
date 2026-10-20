@@ -9,3 +9,5 @@ Alcance por etapa: consultar docs/IMPLEMENTATION_STATUS.md. Una especificación 
 ## Sprint 3: frontera OBD
 
 El transporte Bluetooth solo admite la inicialización interna ATZ, ATE0, ATL0, ATS1 y ATSP0 y solicitudes de lectura 0100, 0120, 010C, 010D, 0105, 012F. Nunca admite servicio 04, escritura ECU, tramas CAN arbitrarias ni comandos ELM procedentes del usuario o LLM. Las herramientas `vehicle.get_fuel`, `vehicle.get_temperature` y `vehicle.get_snapshot` pasan por `VehicleContextEngine`; el proveedor remoto recibe texto e historial acotado, nunca telemetría. El consentimiento de conexión Bluetooth no autoriza enviar datos al proveedor remoto. No se lee ni guarda VIN.
+
+Sprint 5: coordenadas solo hacia Google Places en búsqueda iniciada y autorizada; nunca al LLM. Resultados externos tratados como datos: nombres/direcciones acotados y controles eliminados, sin propuestas ejecutables. Selección y resultados solo en memoria, borrado explícito. Diagnóstico sin coordenadas ni consultas personales. Clave Android restringida por paquete/firma; secretos de web service requieren backend opcional, nunca APK.

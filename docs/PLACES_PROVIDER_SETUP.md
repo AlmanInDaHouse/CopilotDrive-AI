@@ -1,0 +1,12 @@
+# Configuración de lugares reales
+
+1. En Google Cloud, habilita **Places SDK for Android (New)**, facturación y cuota acotada. Consulta precios actuales antes de usar la clave; rating y número de reseñas cambian el SKU de Nearby Search.
+2. Crea una clave de **aplicación Android** restringida al paquete `ai.copilotdrive.app` y al SHA-1 de la firma debug para laboratorio (y de la firma de producción si se publica). Restringe la clave a Places SDK for Android. Una restricción de paquete/firma reduce abuso, pero la clave sigue incluida en el APK.
+   La firma debug de **este APK local** tiene SHA-1 `D0:8F:E7:FC:68:F2:55:9B:20:84:D8:37:AA:36:EE:A8:14:F8:23:CB`; otra máquina o firma tendrá otro valor. Comprueba siempre el certificado del APK que vayas a probar.
+3. Define `PLACES_ANDROID_API_KEY` como variable de entorno o propiedad Gradle local al construir. No la escribas en el repositorio ni en logs. Por ejemplo, en PowerShell: `$env:PLACES_ANDROID_API_KEY='clave-android-restringida'` y después `./gradlew.bat :app:assembleDebug`.
+4. Abre **Lugares**, confirma entorno detenido, autoriza a Google Places y pulsa una categoría. Solo entonces se solicita permiso de ubicación aproximada. El consentimiento de IA no sirve para Places. Revocar el consentimiento borra resultados de la sesión.
+5. Sin clave, el estado es `NOT_CONFIGURED`. El interruptor de demostración produce lugares ficticios etiquetados; no consulta Google y la navegación simulada no abre Maps/Waze.
+
+Se envían categoría y centro aproximado a Google Places. La app conserva precisión, procedencia, fecha y TTL de 30 segundos; rechaza fixes antiguos. Los resultados se mantienen en memoria hasta borrado o fin de sesión. No hay historial de movimientos ni consulta automática al abrir el dashboard. La búsqueda por centro manual no se ofrece porque no existe un geocodificador autorizado configurado. No se consultan APIs comunitarias públicas.
+
+Antes de distribuir: probar clave, factura, límites, atribuciones, enlaces públicos de términos y privacidad y comportamiento con Maps/Waze instalados en un dispositivo concreto. Consultar [guía oficial](https://developers.google.com/maps/documentation/places/android-sdk/config), [cuotas y facturación](https://developers.google.com/maps/documentation/places/android-sdk/usage-and-billing), [políticas](https://developers.google.com/maps/documentation/places/android-sdk/policies).

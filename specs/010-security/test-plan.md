@@ -8,3 +8,5 @@ Tests sin API keys ni hardware por defecto. Integración física y latencia no s
 ## Sprint 3
 
 Comprobar lista cerrada de solicitudes, permisos por nivel de API, cierre de socket al cancelar o agotar timeout, y ausencia de telemetría en historial remoto. Usar fake para revocación y desconexión; reservar compatibilidad de adaptador y voz para una matriz física manual.
+
+Sprint 5: verificar que nombre de lugar malicioso no se interpreta como instrucción, que el LLM no recibe coordenadas ni resultados y que diagnósticos y borrado de sesión no conservan posiciones.

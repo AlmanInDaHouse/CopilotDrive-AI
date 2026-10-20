@@ -65,3 +65,11 @@ El modo de demostración sigue disponible y explícitamente etiquetado.
 Código y tests locales cubren shell, core/harness y flujo vertical; multimedia, navegación y contactos tienen
 adaptadores reales. La validación de cada integración se detalla en TEST_RESULTS.md. No equiparar disponibilidad
 de un adaptador con validación del servicio de un tercero. KNOWN_LIMITATIONS.md delimita cada caso.
+
+## Sprint 5 — rama `feat/sprint5-places-navigation`
+
+**IMPLEMENTED:** contratos Places tipados; `PlacesController` con autorización, TTL, deduplicación, selección temporal y borrado; Google Places SDK Android opcional; demo etiquetada; ubicación coarse bajo demanda; consentimiento Places de sesión separado de IA; panel horizontal y herramientas Jarvis locales; Device Lab de estados y latencia sin coordenadas.
+
+**AUTOMATED_TESTED:** 102/102; detalle en `TEST_RESULTS.md`. **EMULATOR_TESTED:** flujo fake y apertura simulada 15/15, más consulta local offline 1/1. **PHYSICALLY_VERIFIED:** ninguno. **PENDING:** búsqueda Google Places con clave/facturación reales, GPS físico, Apps Maps/Waze instaladas, voz acústica y ELM327. La matriz `PHYSICAL_VALIDATION_MATRIX.md` permanece independiente.
+
+**SPRINT 5 VALIDACIÓN FINAL:** 12 Python, 75 JVM y 15 instrumentadas en emulador API 35; 102/102. Lint 0 errores. APK debug v2 verificado; SHA-256 y smoke offline en `TEST_RESULTS.md`. `PHYSICALLY_VERIFIED` permanece ninguno para Places/GPS/Maps/Waze, voz y OBD.
