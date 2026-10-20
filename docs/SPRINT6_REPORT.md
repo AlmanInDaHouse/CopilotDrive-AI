@@ -1,5 +1,10 @@
 # Sprint 6 — Dashboard 2.0
 
+Actualización al iniciar Sprint 7: PR #7 fusionada en main
+`1328077ff16d6487b4be995aae474dfc8452d345`; workflows Android y Tests del merge
+aprobados. El texto de entrega local de este informe es histórico. La siguiente
+rama de trabajo es `feat/sprint7-device-qualification` (SPRINT7_REPORT.md).
+
 Fecha: 2026-10-20. Rama local: `feat/sprint6-custom-dashboard`.
 Base: `2099b9d560b0b269f2b369ab9e8cc66fe235b837`, Sprint 5/PR #6.
 Se ejecutó fetch y main avanzó por fast-forward a esa base. El cambio previo de
@@ -152,7 +157,7 @@ Sprint 7 recomendado: interoperabilidad física y accesibilidad, reparar problem
 observados y medir rendimiento con dispositivos concretos. Mantener la edición
 limitada a laboratorio; no ampliar permisos o herramientas del LLM de forma implícita.
 
-Para publicar PR, después de autorización: revisar `git diff main...HEAD`, ejecutar
-`git push -u origin feat/sprint6-custom-dashboard`, crear PR a main con este informe,
-adjuntar APK/capturas si se desea y esperar Python/Android CI. Publicar, fusionar y
-hacer release son pasos separados; ninguno se ha ejecutado en este sprint.
+La publicación de Sprint 6 ya se completó mediante PR #7; no volver a publicar esa
+rama. Para la PR de Sprint 7, seguir SPRINT7_REPORT y NEXT_STEPS con autorización
+separada de push. La evidencia histórica de este informe no sustituye el CI de la
+nueva rama ni autoriza una release.

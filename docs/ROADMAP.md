@@ -21,3 +21,12 @@ Lugares cercanos: contratos tipados, ubicación aproximada solicitada al buscar,
 ## Sprint 6
 
 Dashboard modular implementado: ocho widgets nativos, registro cerrado, cuadrícula lógica, presets Classic/Driver/Media/Laboratory, editor seguro en laboratorio, DataStore versionado, recuperación y pruebas. Evidencia y límites en `SPRINT6_REPORT.md`. Sprint 7 recomendado: completar matriz física de pantallas/voz/OBD/MediaSession/GPS/Maps/Waze y resolver incompatibilidades observadas; sin habilitar edición en conducción.
+
+## Sprint 7 y Sprint 8
+
+Sprint 6/PR #7 fusionado en `1328077`, con CI aprobado. Sprint 7 implementa contratos
+de calificación y runner consentido con hashes/firma, semántica accesible, limpieza y
+recuperación de voz, revalidación de consentimiento Places y mediciones del emulador.
+Ver SPRINT7_REPORT para resultados. La certificación física sigue PENDING.
+Sprint 8: hardware/TalkBack/acústica/OBD detenido primero; rendimiento en teléfono y
+servicios comerciales opcionales con cuota/consentimiento después (NEXT_STEPS).
