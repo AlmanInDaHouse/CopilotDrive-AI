@@ -111,7 +111,14 @@ class BluetoothObdProvider(
     val error: StateFlow<String?> = mutableError
     private var session: Job? = null
 
-    override suspend fun snapshot(): VehicleSnapshot = mutableSnapshot.value
+    override suspend fun snapshot(): VehicleSnapshot {
+        if (mutableState.value == VehicleConnectionState.SIMULATED) {
+            val current = simulatedVehicle(clock.now())
+            mutableSnapshot.value = current
+            return current
+        }
+        return mutableSnapshot.value
+    }
 
     fun connect(address: String) {
         val previous = session

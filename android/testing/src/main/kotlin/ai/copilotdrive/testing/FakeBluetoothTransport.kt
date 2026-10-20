@@ -15,6 +15,7 @@ class FakeBluetoothTransport : BluetoothTransport {
     var exchangeFailure: Exception? = null
     var permissionGranted = true
     var radioPresent = true
+    var radioEnabled = true
     var connected = false
     var opens = 0
     var closes = 0
@@ -32,6 +33,7 @@ class FakeBluetoothTransport : BluetoothTransport {
         opens++
         delay(connectLatencyMs)
         if (!radioPresent) throw IOException("Bluetooth absent")
+        if (!radioEnabled) throw IOException("Bluetooth disabled")
         if (!permissionGranted) throw SecurityException("Permission revoked")
         openFailure?.let { throw it }
         connected = true

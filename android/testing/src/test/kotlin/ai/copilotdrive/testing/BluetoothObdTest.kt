@@ -11,6 +11,15 @@ import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class BluetoothObdTest {
+    @Test fun `simulator remains fresh after a long onboarding delay`() = runTest {
+        val clock = DeterministicClock()
+        val provider = BluetoothObdProvider(FakeBluetoothTransport(), clock, backgroundScope)
+        clock.advance(60_000)
+        val snapshot = provider.snapshot()
+        assertEquals(42.0, snapshot.fuelLevelPercent.value)
+        assertEquals(clock.now(), snapshot.fuelLevelPercent.capturedAt)
+        assertEquals(Availability.SIMULATED, snapshot.fuelLevelPercent.availability)
+    }
     @Test fun `parser handles echo spaces no data partial and malformed packets`() {
         assertEquals(1726.0, ObdResponseParser.metric(ObdWireRequest.RPM, "010C\r41 0C 1A F8\r>"))
         assertEquals(1726.0, ObdResponseParser.metric(ObdWireRequest.RPM, "410C1AF8>"))
@@ -22,6 +31,13 @@ class BluetoothObdTest {
         val supported = ObdPidRegistry.supported("41 00 08 18 00 00 >", 0)!!
         assertEquals(setOf(ObdWireRequest.RPM, ObdWireRequest.SPEED, ObdWireRequest.COOLANT), supported)
         assertFalse(ObdPidRegistry.hasNext("41 00 08 18 00 00 >", 0))
+        assertEquals(emptySet<ObdWireRequest>(), ObdPidRegistry.supported("41 00 00 00 00 02 >", 0))
+    }
+
+    @Test fun `wire vocabulary contains only fixed initialization and mode one reads`() {
+        assertEquals(setOf("ATZ", "ATE0", "ATL0", "ATS1", "ATSP0", "0100", "0120", "010C", "010D", "0105", "012F"),
+            ObdWireRequest.entries.map { it.wire }.toSet())
+        assertTrue(ObdWireRequest.entries.none { it.wire.startsWith("04") || it.wire.startsWith("02") })
     }
 
     @Test fun `fixed initialization and real readings use allowed requests`() = runTest {
@@ -68,7 +84,8 @@ class BluetoothObdTest {
 
     @Test fun `permission revocation radio absence and cancellation release transport`() = runTest {
         for (fake in listOf(FakeBluetoothTransport().apply { permissionGranted = false },
-            FakeBluetoothTransport().apply { radioPresent = false })) {
+            FakeBluetoothTransport().apply { radioPresent = false },
+            FakeBluetoothTransport().apply { radioEnabled = false })) {
             val provider = BluetoothObdProvider(fake, DeterministicClock(), backgroundScope)
             provider.connect("device"); advanceTimeBy(1_001); runCurrent()
             assertEquals(VehicleConnectionState.ERROR, provider.state.value)
@@ -114,5 +131,21 @@ class BluetoothObdTest {
         assertNull(provider.readings.value.fuelLevelPercent.value)
         advanceTimeBy(1_001); runCurrent()
         assertEquals(VehicleConnectionState.ERROR, provider.state.value)
+    }
+
+    @Test fun `unexpected adapter disconnect clears readings then retries once`() = runTest {
+        val fake = FakeBluetoothTransport()
+        val provider = BluetoothObdProvider(fake, DeterministicClock(), backgroundScope)
+        provider.connect("device"); runCurrent()
+        assertNotNull(provider.readings.value.engineRpm.value)
+        fake.connected = false
+        advanceTimeBy(1_001); runCurrent()
+        assertEquals(VehicleConnectionState.STALE, provider.state.value)
+        assertNull(provider.readings.value.engineRpm.value)
+        assertTrue(fake.closes > 0)
+        advanceTimeBy(1_001); runCurrent()
+        assertEquals(2, fake.opens)
+        assertEquals(VehicleConnectionState.CONNECTED_REAL, provider.state.value)
+        provider.disconnect()
     }
 }

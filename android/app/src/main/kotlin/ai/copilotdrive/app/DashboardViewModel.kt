@@ -74,10 +74,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val permissionProvider = PermissionProvider { id ->
         when (id) {
             "vehicle.fuel", "vehicle.temperature", "vehicle.snapshot" -> CapabilityStatus.AVAILABLE
-            "vehicle.obd_connected" -> when (obd.state.value) {
-                VehicleConnectionState.CONNECTED_REAL -> CapabilityStatus.AVAILABLE
-                VehicleConnectionState.UNSUPPORTED -> CapabilityStatus.UNSUPPORTED
-                VehicleConnectionState.ERROR -> CapabilityStatus.ERROR
+            "vehicle.obd_connected" -> when {
+                !bluetooth.present() || obd.state.value == VehicleConnectionState.UNSUPPORTED -> CapabilityStatus.UNSUPPORTED
+                !bluetooth.permitted() -> CapabilityStatus.PERMISSION_REQUIRED
+                obd.state.value == VehicleConnectionState.CONNECTED_REAL -> CapabilityStatus.AVAILABLE
+                obd.state.value == VehicleConnectionState.ERROR -> CapabilityStatus.ERROR
                 else -> CapabilityStatus.DISCONNECTED
             }
             "microphone.available" -> if (app.checkSelfPermission(Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) CapabilityStatus.AVAILABLE else CapabilityStatus.PERMISSION_REQUIRED
