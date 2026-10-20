@@ -1,4 +1,8 @@
-# Estado de implementación — Sprint 2 local
+# Estado de implementación — Sprint 3 local
+
+Sprint 2 se fusionó en `origin/main` `74507bb` mediante PR #3. `feat/sprint3-bluetooth-obd` se rebasó sobre ese commit con respaldo local. Sprint 3 implementa RFCOMM Bluetooth Classic, descubrimiento 0100/0120, cuatro lecturas permitidas, reconexión acotada, selector de emparejados y estado en dashboard/Jarvis. El simulador sigue funcionando sin adaptador. Build APK, lint, 57 pruebas JVM, 12 Python y 12 instrumentadas pasaron; no hay prueba física de ELM327. Informe: `SPRINT3_REPORT.md`.
+
+## Histórico Sprint 2
 
 Rama `feat/sprint2-voice-llm` desde `main` `b3646df`, sin push. El último workflow Android de `main` para el merge de PR #2 terminó correctamente ([run #6](https://github.com/AlmanInDaHouse/CopilotDrive-AI/actions/runs/39355399788)).
 
@@ -41,11 +45,11 @@ El modo de demostración sigue disponible y explícitamente etiquetado.
 
 ## Parcial o pendiente
 - Validación de un proveedor comercial/servidor real y telemetría consentida: pendientes. El APK Sprint 2 sí solicita INTERNET para la IA opcional.
-- AndroidObdProvider Bluetooth, reconexión, consultas de capacidades: pendientes. Parser no equivale a transporte.
+- En la rama Sprint 3 se implementan RFCOMM Bluetooth Classic, consultas de capacidades y reconexión limitada. Falta validación física con adaptador y coche.
 - POI real y ubicación, wake word, editor de widgets, Spotify SDK específico: pendientes.
 - No hay puente Android-Python activado; contrato v1 está preparado y probado con fixtures.
 - Cualificación en pantallas físicas, ruido, voz acústica, latencia y consumo: pendientes.
-- Firma de producción, releases y distribución pública: no realizados. PR #1 y PR #2 fusionadas; rama Sprint 2 local.
+- Firma de producción, releases y distribución pública: no realizados. PR #1, #2 y #3 fusionadas; rama Sprint 3 local.
 
 ## Criterios MVP (specs)
 Código y tests locales cubren shell, core/harness y flujo vertical; multimedia, navegación y contactos tienen

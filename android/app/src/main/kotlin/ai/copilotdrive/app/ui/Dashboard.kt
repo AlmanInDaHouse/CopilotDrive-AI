@@ -81,7 +81,8 @@ fun DashboardScreen(
             Surface(color = Color(0xFF29251E), shape = RoundedCornerShape(12.dp), border = BorderStroke(1.dp, Color(0xFF695235))) {
                 Row(Modifier.fillMaxWidth().padding(14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.size(8.dp).background(Amber, CircleShape))
-                    Text("SIMULADOR · Datos de vehículo ficticios", color = Amber, fontWeight = FontWeight.Medium)
+                    Text(if (state.vehicle?.simulationMode == true) "SIMULADOR · Datos de vehículo ficticios"
+                        else "OBD · ${state.vehicleConnection.name} · ${state.vehicle?.source ?: "Sin datos"}", color = Amber, fontWeight = FontWeight.Medium)
                 }
             }
         }
@@ -141,7 +142,7 @@ fun metricLabel(metric: Metric?): String {
 @Composable
 private fun VehicleCard(vehicle: VehicleSnapshot?, modifier: Modifier = Modifier) {
     DashboardCard(modifier.fillMaxWidth()) {
-        Eyebrow("01 / VEHÍCULO SIMULADO")
+        Eyebrow(if (vehicle?.simulationMode == true) "01 / VEHÍCULO SIMULADO" else "01 / VEHÍCULO OBD")
         Spacer(Modifier.height(18.dp))
         Text("Combustible", color = Muted)
         Text(metricLabel(vehicle?.fuelLevelPercent), fontSize = 44.sp, fontWeight = FontWeight.Light, color = Mint, modifier = Modifier.testTag("fuel-value"))
@@ -151,7 +152,8 @@ private fun VehicleCard(vehicle: VehicleSnapshot?, modifier: Modifier = Modifier
         MetricRow("Velocidad", metricLabel(vehicle?.speedKmh))
         MetricRow("Refrigerante", metricLabel(vehicle?.coolantTemperatureC))
         MetricRow("Autonomía", metricLabel(vehicle?.vehicleRangeKm))
-        Text("OBD sin conectar", color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp))
+        Text(if (vehicle?.simulationMode == true) "Datos ficticios" else if (vehicle?.connectionStatus == ConnectionStatus.CONNECTED) "Lecturas OBD · ${vehicle.source}" else "OBD sin conectar",
+            color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp))
     }
 }
 

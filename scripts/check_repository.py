@@ -11,7 +11,13 @@ ANDROID = '{http://schemas.android.com/apk/res/android}'
 def main():
     manifest = ET.parse(ROOT / 'android/app/src/main/AndroidManifest.xml').getroot()
     permissions = {p.attrib[ANDROID + 'name'] for p in manifest.findall('uses-permission')}
-    assert permissions == {'android.permission.RECORD_AUDIO', 'android.permission.READ_CONTACTS', 'android.permission.INTERNET'}, permissions
+    assert permissions == {
+        'android.permission.RECORD_AUDIO', 'android.permission.READ_CONTACTS', 'android.permission.INTERNET',
+        'android.permission.BLUETOOTH', 'android.permission.BLUETOOTH_CONNECT',
+    }, permissions
+    legacy = next(p for p in manifest.findall('uses-permission') if p.attrib[ANDROID + 'name'] == 'android.permission.BLUETOOTH')
+    assert legacy.attrib[ANDROID + 'maxSdkVersion'] == '30'
+    assert not any(p.attrib[ANDROID + 'name'] in {'android.permission.BLUETOOTH_SCAN', 'android.permission.ACCESS_FINE_LOCATION'} for p in manifest.findall('uses-permission'))
     assert manifest.find('application').attrib[ANDROID + 'usesCleartextTraffic'] == 'false'
     assert manifest.find('application').attrib[ANDROID + 'allowBackup'] == 'false'
     main_network = ET.parse(ROOT / 'android/app/src/main/res/xml/network_security_config.xml').getroot()
@@ -22,6 +28,8 @@ def main():
     assert all(d.attrib.get('includeSubdomains') == 'false' for d in debug_network.findall('domain-config/domain'))
     for source in (ROOT / 'android/core/src/main').rglob('*.kt'):
         assert 'import android.' not in source.read_text(encoding='utf-8'), source
+    wire = (ROOT / 'android/core/src/main/kotlin/ai/copilotdrive/core/BluetoothObd.kt').read_text(encoding='utf-8')
+    assert '"04"' not in wire and '"03"' not in wire and 'VIN' not in wire
     app_dependencies = (ROOT / 'android/app/build.gradle.kts').read_text(encoding='utf-8')
     assert 'implementation(project(":testing"))' not in app_dependencies
     for source in (ROOT / 'android/app/src/main').rglob('*.kt'):

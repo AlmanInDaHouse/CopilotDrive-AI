@@ -12,6 +12,7 @@ Estas versiones son una base estable fijada, no una afirmaciÃ³n de ser las Ã�
 | MediaSession | Acceso de notificaciones autorizado | https://developer.android.com/reference/android/media/session/MediaSessionManager |
 | SpeechRecognizer | Local cuando disponible; fallback con consentimiento | https://developer.android.com/reference/android/speech/SpeechRecognizer |
 | Maps / Waze | Intents oficiales; sin ETA interna | https://developer.android.com/guide/components/google-maps-intents y https://developers.google.com/waze/deeplinks |
+| OBD Android | Bluetooth Classic RFCOMM SPP, dispositivos ya emparejados; Android 8–15 | Implementado con APIs públicas, validado con fake; adaptador y coche físicos pendientes |
 
 La compatibilidad documental no sustituye pruebas en dispositivo. Build y pruebas reales: TEST_RESULTS.md.
 Spotify/SoundCloud/YouTube: solo sesiÃ³n MediaSession accesible; SDKs especÃ­ficos no implementados.

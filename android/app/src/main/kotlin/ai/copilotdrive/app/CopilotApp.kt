@@ -18,7 +18,8 @@ import ai.copilotdrive.app.ui.*
 import ai.copilotdrive.core.CapabilityStatus
 
 @Composable
-fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: () -> Unit, onMediaPermission: () -> Unit) {
+fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: () -> Unit, onMediaPermission: () -> Unit,
+    onBluetoothPermission: () -> Unit = {}) {
     val state by model.state.collectAsStateWithLifecycle()
     var settings by rememberSaveable { mutableStateOf(false) }
     var confirmSettings by remember { mutableStateOf(false) }
@@ -27,7 +28,7 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
             when {
                 !state.preferencesLoaded -> Box(Modifier.padding(32.dp)) { Text("Preparando CopilotDrive…") }
                 !state.preferences.onboarded -> Onboarding { model.savePreferences(state.preferences.copy(onboarded = true)) }
-                settings -> SettingsScreen(state, { settings = false }, model::savePreferences, { settings = false; onMicrophone() }, onContacts, onMediaPermission, model::setDemoMedia, model.androidMedia::select, model)
+                settings -> SettingsScreen(state, { settings = false }, model::savePreferences, { settings = false; onMicrophone() }, onContacts, onMediaPermission, onBluetoothPermission, model::setDemoMedia, model.androidMedia::select, model)
                 else -> DashboardScreen(state, { confirmSettings = true }, onMicrophone, model::cancel, model::demo, model::mediaControl)
             }
             if (confirmSettings) {
@@ -62,7 +63,7 @@ fun Onboarding(onAccept: () -> Unit) {
 private fun SettingsScreen(
     state: DashboardState, onBack: () -> Unit, onSave: (VoicePreferences) -> Unit,
     onMicrophone: () -> Unit, onContacts: () -> Unit, onMediaPermission: () -> Unit,
-    onDemoMedia: (Boolean) -> Unit, onSelectSession: (String) -> Unit, model: DashboardViewModel,
+    onBluetoothPermission: () -> Unit, onDemoMedia: (Boolean) -> Unit, onSelectSession: (String) -> Unit, model: DashboardViewModel,
 ) {
     var voiceMenu by remember { mutableStateOf(false) }
     var rate by remember(state.preferences.rate) { mutableFloatStateOf(state.preferences.rate) }
@@ -73,6 +74,7 @@ private fun SettingsScreen(
     var timeout by remember(state.preferences.ai.timeoutMs) { mutableFloatStateOf(state.preferences.ai.timeoutMs.toFloat()) }
     var token by remember { mutableStateOf("") }
     var consentDialog by remember { mutableStateOf(false) }
+    var obdConsentDialog by remember { mutableStateOf(false) }
     LazyColumn(contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.testTag("settings")) {
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -121,6 +123,30 @@ private fun SettingsScreen(
                 }
                 OutlinedButton(onClick = onContacts, modifier = Modifier.heightIn(min = 56.dp).padding(top = 8.dp)) { Text("Activar búsqueda de contactos") }
                 Text("Contactos solo en el dispositivo. «Llama a Mercedes» pide confirmación y abre el marcador; nunca llama automáticamente.", color = Muted, fontSize = 13.sp)
+            }
+        }
+        item {
+            DashboardCard(Modifier.fillMaxWidth()) {
+                Eyebrow("VEHÍCULO · OBD-II")
+                Text("Estado: ${state.vehicleConnection.name}. Lecturas locales; sin diagnóstico certificado.", color = Muted)
+                Text("Experimental. Usa la app únicamente con el vehículo detenido. Empareja primero un adaptador ELM327 Bluetooth Classic en Ajustes de Android.", color = Muted, fontSize = 13.sp)
+                OutlinedButton(onClick = onBluetoothPermission) { Text("Mostrar dispositivos emparejados") }
+                state.obdDevices.forEach { device ->
+                    TextButton(onClick = { model.selectObd(device.address) }) {
+                        Text("${if (state.selectedObdAddress == device.address) "✓ " else ""}${device.name} · ${device.address}")
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { obdConsentDialog = true }, enabled = state.selectedObdAddress != null &&
+                        state.vehicleConnection != ai.copilotdrive.core.VehicleConnectionState.CONNECTED_REAL) { Text("Conectar") }
+                    OutlinedButton(onClick = model::disconnectObd) { Text("Desconectar") }
+                }
+                OutlinedButton(onClick = model::useSimulator) { Text("Volver al simulador") }
+                Text("PIDs disponibles: ${state.obdCapabilities.sorted().joinToString().ifBlank { "No disponible" }}", color = Muted)
+                val lastReading = state.vehicle?.takeIf { !it.simulationMode && it.connectionStatus == ai.copilotdrive.core.ConnectionStatus.CONNECTED &&
+                    listOf(it.speedKmh, it.engineRpm, it.coolantTemperatureC, it.fuelLevelPercent).any { metric -> metric.availability == ai.copilotdrive.core.Availability.AVAILABLE } }?.capturedAt
+                Text("Última lectura: ${lastReading?.let { java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(it)) } ?: "No disponible"}", color = Muted)
+                state.obdError?.let { Text(it, color = Amber) }
             }
         }
         item {
@@ -187,6 +213,11 @@ private fun SettingsScreen(
             onSave(state.preferences.copy(ai = state.preferences.ai.copy(enabled = true, consented = true)))
         }) { Text("Autorizar") } },
         dismissButton = { TextButton(onClick = { consentDialog = false }) { Text("Cancelar") } })
+    if (obdConsentDialog) AlertDialog(onDismissRequest = { obdConsentDialog = false },
+        title = { Text("Conectar vehículo experimental") },
+        text = { Text("La app leerá RPM, velocidad, refrigerante y combustible cuando el vehículo lo admita. No es un diagnóstico certificado. La telemetría permanece local y no se envía a proveedores de IA.") },
+        confirmButton = { TextButton(onClick = { obdConsentDialog = false; model.connectObd() }) { Text("Conectar") } },
+        dismissButton = { TextButton(onClick = { obdConsentDialog = false }) { Text("Cancelar") } })
 }
 
 fun capabilityLabel(status: CapabilityStatus): String = when (status) {

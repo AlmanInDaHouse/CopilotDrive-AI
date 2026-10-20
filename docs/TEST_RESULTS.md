@@ -109,3 +109,15 @@ La imagen AOSP usada no ofrece una voz española TTS local utilizable; la app mo
 visual y «Voz no disponible». STT/TTS acústicos no se han validado físicamente; el flujo de voz y sus errores sí
 se probaron con fakes. No se probaron un coche, Bluetooth OBD, Maps/Waze instalados, agenda física ni cuentas
 de streaming. No se midieron consumo ni latencia real de voz. No declarar esos criterios completos.
+
+## Sprint 3 — evidencia local nueva
+
+Tras rebase sobre `origin/main` `74507bb` y corrección de frescura del simulador, se ejecutaron:
+
+- `python -m unittest discover -s tests -v`: **12/12**.
+- `scripts/check_repository.py` y `git diff --check`: **correctos**.
+- `:core:test :testing:test :app:testDebugUnitTest`: **57/57** (core 13, testing 42, app 2). `BluetoothObdTest`: **12/12** con fake serial.
+- `:app:connectedDebugAndroidTest` en emulador API 35: **12/12**, incluidos onboarding, herramientas locales, Keystore, HTTP loopback, MediaSession y la pantalla OBD sin adaptador seleccionado.
+- `:app:lintDebug`: **0 errores, 10 avisos** (8 `GradleDependency`, 2 `UseKtx`). `:app:assembleDebug` y `:app:assembleDebugAndroidTest`: **BUILD SUCCESSFUL**.
+
+**Total Sprint 3: 81/81** (12 Python + 57 JVM + 12 instrumentadas). APK debug: 11.762.683 bytes, SHA-256 `6f09ee0dca6d667eec93c81ef15f573817a2fbd00542fc54ef76d876d78f322c`; firma debug v2 verificada. `adb install -r` y arranque de MainActivity funcionaron. La revisión manual confirmó el simulador después de 15 s de onboarding, respuesta escrita local ante TTS no disponible, permiso Bluetooth y mensaje de ausencia de adaptadores emparejados. No se conectó un ELM327 físico. Evidencia ampliada: `SPRINT3_REPORT.md` y archivos ignorados en `artifacts/`.

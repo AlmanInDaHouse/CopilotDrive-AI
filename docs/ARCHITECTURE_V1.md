@@ -15,6 +15,8 @@ flowchart TD
  Registry --> Context[VehicleContextEngine]
  Registry --> Ports[Media / navigation / contacts / places ports]
  Context --> Sim[SimulatorVehicleProvider]
+ Context --> OBD[BluetoothObdProvider]
+ OBD --> RFCOMM[Android Bluetooth Classic RFCOMM]
  Ports --> Android[Android platform adapters]
  Voice --> Speech[SpeechRecognizer + TextToSpeech + audio focus]
  VM --> Prefs[DataStore voice / provider / consent preferences]
