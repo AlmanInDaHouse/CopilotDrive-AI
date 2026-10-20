@@ -4,7 +4,7 @@
 
 Tras el commit funcional `8b7522d`, se ejecutaron en Windows/JDK 17/SDK 35: Python unittest **12/12**; JVM core **16/16**, testing **44/44**, Android unit **2/2**; Android instrumentado en emulador API 35 **14/14**. Total: **88/88**. El último comando Gradle conjunto (`:core:test :testing:test :app:testDebugUnitTest :app:lintDebug :app:assembleDebug :app:assembleDebugAndroidTest :app:connectedDebugAndroidTest`) terminó `BUILD SUCCESSFUL`. Android lint: **0 errores, 10 avisos**; `check_repository.py` y `git diff --check` aprobaron.
 
-La instrumentación incluyó apertura del Device Lab, checks pasivos, borrado, respuesta escrita local sin TTS, servidor Chat Completions loopback 200/401/429/503 y regresiones anteriores. El APK debug se instaló y MainActivity arrancó en el emulador Android 15. APK final: `artifacts/CopilotDrive-AI-sprint4-debug.apk`, SHA-256 `49473F147CFD93A16629BE56FF4177D0E73EC13F03DA0955DE11C6BBA3961018`, firma debug v2 verificada. Ver `SPRINT4_REPORT.md` para alcance y límites. Ningún teléfono, adaptador, vehículo ni endpoint comercial ha sido validado físicamente.
+La instrumentación incluyó apertura del Device Lab, checks pasivos, borrado, respuesta escrita local sin TTS, servidor Chat Completions loopback 200/401/429/503 y regresiones anteriores. El APK debug se instaló y MainActivity arrancó en el emulador Android 15. APK final: `artifacts/CopilotDrive-AI-sprint4-debug.apk`, SHA-256 `354A35C2F053211EAEC4EB24BF106D7DB0CF919D26C3DE06A649DF9A4550D929`, firma debug v2 verificada. Ver `SPRINT4_REPORT.md` para alcance y límites. Ningún teléfono, adaptador, vehículo ni endpoint comercial ha sido validado físicamente.
 
 ## Sprint 2 — rama local `feat/sprint2-voice-llm`
 

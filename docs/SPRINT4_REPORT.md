@@ -20,10 +20,10 @@ El emulador instaló el APK, lanzó MainActivity y pasó el flujo Ajustes → La
 
 ## J. APK
 
-`artifacts/CopilotDrive-AI-sprint4-debug.apk` (artefacto local ignorado por git), 11.762.683 bytes. SHA-256: `49473F147CFD93A16629BE56FF4177D0E73EC13F03DA0955DE11C6BBA3961018`. `apksigner verify --verbose`: firma debug v2 válida, un firmante. `adb install -r`: Success; `am start` y `pidof` confirmaron MainActivity/proceso. No es una firma de producción.
+`artifacts/CopilotDrive-AI-sprint4-debug.apk` (artefacto local ignorado por git), 11.762.683 bytes. SHA-256: `354A35C2F053211EAEC4EB24BF106D7DB0CF919D26C3DE06A649DF9A4550D929`. `apksigner verify --verbose`: firma debug v2 válida, un firmante. `adb install -r`: Success; `am start` y `pidof` confirmaron MainActivity/proceso. No es una firma de producción.
 
 ## K–N. Límites y entrega
 
 **IMPLEMENTED / AUTOMATED_TESTED / EMULATOR_TESTED:** como arriba. **PHYSICALLY_VERIFIED:** ninguno. **PENDING:** teléfono y voz acústica es-ES, adaptador ELM327, vehículo detenido, proveedor remoto real, reproductores, Maps/Waze y contactos de laboratorio. La matriz y el procedimiento están en `PHYSICAL_VALIDATION_MATRIX.md` y `DEVICE_LAB_PROCEDURE.md`; una simulación nunca marca una fila física como verificada.
 
-Commit funcional local: `8b7522d` (`feat(android): add typed device lab and integration diagnostics`). La documentación y specs se registran en un commit separado. Sprint 5 recomendado: ejecutar la matriz física y corregir incompatibilidades medidas antes de ampliar funciones vehiculares. Para abrir PR tras autorización: `git push -u origin feat/sprint4-hardware-validation`, luego crear PR contra `main` con resumen, resultados, SHA-256 y lista de validaciones físicas pendientes. No se hizo push, merge ni release.
+Commits locales iniciales: `8b7522d` (`feat(android): add typed device lab and integration diagnostics`) y `eb8c7a2` (`docs: define Sprint 4 validation protocol and record evidence`). La corrección final de duración OBD se registra en un commit posterior. Sprint 5 recomendado: ejecutar la matriz física y corregir incompatibilidades medidas antes de ampliar funciones vehiculares. Para abrir PR tras autorización: `git push -u origin feat/sprint4-hardware-validation`, luego crear PR contra `main` con resumen, resultados, SHA-256 y lista de validaciones físicas pendientes. No se hizo push, merge ni release.

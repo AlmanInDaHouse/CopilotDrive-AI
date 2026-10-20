@@ -88,12 +88,13 @@ class VehicleCapabilityDiscovery(private val transport: BluetoothTransport) {
 
 class TelemetryPollingCoordinator(
     private val transport: BluetoothTransport, private val clock: Clock,
-    private val supported: Set<ObdWireRequest>, private val onReading: (ObdWireRequest, Double?, Long) -> Unit,
+    private val supported: Set<ObdWireRequest>, private val onReading: (ObdWireRequest, Double?, Long, Long) -> Unit,
 ) {
     suspend fun pollOnce() {
         for (request in ObdPidRegistry.telemetry.filter { it in supported }) {
+            val startedNs = System.nanoTime()
             val raw = withTimeout(3_000) { transport.exchange(request) }
-            onReading(request, ObdResponseParser.metric(request, raw), clock.now())
+            onReading(request, ObdResponseParser.metric(request, raw), clock.now(), startedNs)
         }
     }
 }
@@ -155,9 +156,9 @@ class BluetoothObdProvider(
                         mutableSnapshot.value = emptyRealSnapshot(clock.now(), supported)
                         mutableState.value = VehicleConnectionState.CONNECTED_REAL
                         observe("connection", DiagnosticStatus.PASS, connectionStart)
-                        val poller = TelemetryPollingCoordinator(transport, clock, supported) { request, value, at ->
+                        val poller = TelemetryPollingCoordinator(transport, clock, supported) { request, value, at, readingStart ->
                             mutableSnapshot.value = mutableSnapshot.value.withReading(request, value, at)
-                            observe(if (value == null) "reading_unavailable" else "reading_success", DiagnosticStatus.PASS, System.nanoTime(),
+                            observe(if (value == null) "reading_unavailable" else "reading_success", DiagnosticStatus.PASS, readingStart,
                                 request.wire)
                         }
                         while (true) { poller.pollOnce(); delay(1_000) }
