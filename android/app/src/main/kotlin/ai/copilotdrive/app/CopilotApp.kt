@@ -18,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ai.copilotdrive.app.platform.VoicePreferences
 import ai.copilotdrive.app.ui.*
 import ai.copilotdrive.core.CapabilityStatus
+import ai.copilotdrive.core.OperationMode
 import ai.copilotdrive.core.PlaceCategory
 import ai.copilotdrive.core.dashboardReady
 
@@ -54,10 +55,11 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
                     onPlaces = { places = true; model.cancel() }, layout = customization.layout,
                     onEdit = { laboratoryMode = false; confirmEditor = true; model.cancel() },
                     onDeviceLab = { deviceLab = true; model.cancel() }, onNavigate = model::openDashboardNavigation,
-                    layoutNotice = customization.error)
+                    layoutNotice = customization.error,
+                    onAcknowledgeMode = { model.savePreferences(state.preferences.copy(modeNoticeRequired = false)) })
             }
             if (confirmSettings) {
-                AlertDialog(onDismissRequest = { confirmSettings = false }, title = { Text("Configuración de laboratorio") },
+                AlertDialog(onDismissRequest = { confirmSettings = false }, title = { Text("Ajustes · entorno detenido") },
                     text = { Text("El movimiento del vehículo es desconocido. Abre los ajustes únicamente en un entorno de prueba detenido.") },
                     confirmButton = { TextButton(onClick = { confirmSettings = false; settings = true; model.cancel() }) { Text("Estoy en un entorno detenido") } },
                     dismissButton = { TextButton(onClick = { confirmSettings = false }) { Text("Cancelar") } })
@@ -88,18 +90,20 @@ fun CopilotApp(model: DashboardViewModel, onMicrophone: () -> Unit, onContacts: 
 
 @Composable
 fun Onboarding(onAccept: () -> Unit) {
-    LazyColumn(contentPadding = PaddingValues(32.dp), verticalArrangement = Arrangement.spacedBy(24.dp), modifier = Modifier.testTag("onboarding")) {
-        item { Eyebrow("COPILOTDRIVE AI / VISTA PREVIA") }
-        item { Text("Un copiloto.\nDatos claros.\nTu control.", fontSize = 40.sp, lineHeight = 46.sp) }
-        item { Text("Empieza con un vehículo simulado y consultas locales. No necesitas cuenta, servidor ni claves.", color = Muted, fontSize = 18.sp) }
-        item {
-            DashboardCard {
-                Text("Antes de empezar", fontSize = 22.sp)
-                Spacer(Modifier.height(14.dp))
-                Text("• Usa esta versión solo en un entorno de prueba detenido.\n• La telemetría es ficticia y no describe tu coche.\n• El micrófono se activa al pulsar y pedir permiso.\n• El motor de voz del sistema puede usar servicios externos; ese fallback está desactivado hasta que lo autorices en Ajustes.\n• No guardamos conversaciones ni audio.", color = Muted, lineHeight = 25.sp)
-            }
-        }
-        item { Button(onClick = onAccept, modifier = Modifier.heightIn(min = 64.dp).testTag("accept-onboarding")) { Text("Empezar en entorno de prueba") } }
+    LazyColumn(contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp), modifier = Modifier.testTag("onboarding")) {
+        item { Eyebrow("COPILOTDRIVE AI / BIENVENIDO") }
+        item { Text("Tu viaje.\nTu voz.\nTu control.", style = MaterialTheme.typography.displayMedium) }
+        item { ModeBadge(OperationMode.REAL); Spacer(Modifier.height(12.dp)); Text("Datos reales. Incluso cuando no hay datos.", style = MaterialTheme.typography.titleLarge) }
+        item { DashboardCard(Modifier.fillMaxWidth()) {
+            EmptyState("Jarvis, en local", "Comandos locales y TTS instalado, sin clave de IA. Pulsa para hablar; nunca escucha en segundo plano.", CockpitSymbol.VOICE)
+            HorizontalDivider(color = Cockpit.Border, modifier = Modifier.padding(vertical = 8.dp))
+            EmptyState("Tu vehículo, por Bluetooth", "Selecciona y confirma un ELM327 emparejado. Sin conexión mostramos OBD desconectado. Solo lecturas compatibles.", CockpitSymbol.VEHICLE)
+            HorizontalDivider(color = Cockpit.Border, modifier = Modifier.padding(vertical = 8.dp))
+            EmptyState("Internet, cuando tú quieras", "IA externa y Places necesitan configuración y consentimiento separados; pueden consumir cuota. La voz del sistema también puede usar Internet si la autorizas.", CockpitSymbol.ROUTE)
+        } }
+        item { Text("Sin conexión: comandos locales y respuesta escrita. Sin OBD: datos no disponibles. DEMO es opcional en Ajustes y siempre muestra datos ficticios etiquetados.", color = Muted) }
+        item { Text("Usa la configuración y las pruebas solo en un entorno detenido. Movimiento desconocido no significa aparcado. No guardamos conversaciones ni audio.", color = Muted, fontSize = 13.sp) }
+        item { Button(onClick = onAccept, shape = Cockpit.ControlShape, modifier = Modifier.fillMaxWidth().heightIn(min = 60.dp).testTag("accept-onboarding")) { Text("Empezar en modo REAL") } }
     }
 }
 
@@ -110,6 +114,7 @@ private fun SettingsScreen(
     onBluetoothPermission: () -> Unit, onDemoMedia: (Boolean) -> Unit, onSelectSession: (String) -> Unit, model: DashboardViewModel,
     onDeviceLab: () -> Unit,
 ) {
+    var modeDialog by remember { mutableStateOf(false) }
     var voiceMenu by remember { mutableStateOf(false) }
     var rate by remember(state.preferences.rate) { mutableFloatStateOf(state.preferences.rate) }
     var pitch by remember(state.preferences.pitch) { mutableFloatStateOf(state.preferences.pitch) }
@@ -122,23 +127,24 @@ private fun SettingsScreen(
     var obdConsentDialog by remember { mutableStateOf(false) }
     var providerTestDialog by remember { mutableStateOf(false) }
     LazyColumn(contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp), modifier = Modifier.testTag("settings")) {
-        item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Tu copiloto", fontSize = 30.sp)
-                OutlinedButton(onClick = onBack, modifier = Modifier.heightIn(min = 56.dp)) { Text("Volver") }
-            }
-            Text("Configuración de laboratorio · Movimiento desconocido", color = Amber)
+        item { ScreenHeading("AJUSTES", "Tu copiloto", onBack)
+            Text("Configuración de laboratorio · Movimiento desconocido", color = Muted, fontSize = 13.sp)
         }
         item {
             DashboardCard(Modifier.fillMaxWidth()) {
-                Eyebrow("LABORATORIO DEL DISPOSITIVO")
-                Text("Comprueba disponibilidad y revisa observaciones sin iniciar pruebas físicas automáticamente.", color = Muted)
-                OutlinedButton(onClick = onDeviceLab, modifier = Modifier.testTag("open-device-lab")) { Text("Abrir laboratorio") }
+                Eyebrow("01 / GENERAL")
+                Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) { Text("Modo de operación", style = MaterialTheme.typography.titleLarge); ModeBadge(state.preferences.operationMode) }
+                    Switch(checked = state.preferences.operationMode == OperationMode.DEMO,
+                        onCheckedChange = { if (it) modeDialog = true else model.setOperationMode(OperationMode.REAL) },
+                        modifier = Modifier.testTag("operation-mode-demo").semantics { contentDescription = "Activar modo DEMO; datos ficticios" })
+                }
+                Text("REAL usa fuentes disponibles. DEMO sustituye vehículo, multimedia y lugares por datos ficticios. Cambiar de modo cierra la conexión OBD y borra resultados temporales.", color = Muted)
             }
         }
         item {
             DashboardCard(Modifier.fillMaxWidth()) {
-                Eyebrow("VOZ Y PRIVACIDAD")
+                Eyebrow("02 / VOZ")
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Permitir motor STT del sistema\nPuede enviar audio a su proveedor", color = Muted, modifier = Modifier.weight(1f).padding(vertical = 16.dp))
                     Switch(modifier = Modifier.semantics { contentDescription = "Permitir motor STT del sistema; puede enviar audio a su proveedor" }, checked = state.preferences.allowSystemRecognition, onCheckedChange = { onSave(state.preferences.copy(allowSystemRecognition = it)) })
@@ -164,47 +170,7 @@ private fun SettingsScreen(
         }
         item {
             DashboardCard(Modifier.fillMaxWidth()) {
-                Eyebrow("MULTIMEDIA Y CONTACTOS")
-                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Text("Usar audio de demostración", modifier = Modifier.weight(1f).padding(vertical = 16.dp))
-                    Switch(modifier = Modifier.semantics { contentDescription = "Usar audio de demostración" }, checked = state.demoMedia, onCheckedChange = onDemoMedia)
-                }
-                Text("Para audio real, desactiva la demostración y concede acceso a notificaciones. Solo consultamos sesiones multimedia; no leemos ni guardamos el contenido de notificaciones.", color = Muted)
-                OutlinedButton(onClick = onMediaPermission, modifier = Modifier.heightIn(min = 56.dp).padding(top = 8.dp)) { Text("Autorizar sesiones multimedia") }
-                state.sessions.forEach { session ->
-                    TextButton(onClick = { onSelectSession(session.id) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Elegir ${session.label}${if (session.playing) " · reproduciendo" else ""}") }
-                }
-                OutlinedButton(onClick = onContacts, modifier = Modifier.heightIn(min = 56.dp).padding(top = 8.dp)) { Text("Activar búsqueda de contactos") }
-                Text("Contactos solo en el dispositivo. «Llama a Mercedes» pide confirmación y abre el marcador; nunca llama automáticamente.", color = Muted, fontSize = 13.sp)
-            }
-        }
-        item {
-            DashboardCard(Modifier.fillMaxWidth()) {
-                Eyebrow("VEHÍCULO · OBD-II")
-                Text("Estado: ${state.vehicleConnection.name}. Lecturas locales; sin diagnóstico certificado.", color = Muted)
-                Text("Experimental. Usa la app únicamente con el vehículo detenido. Empareja primero un adaptador ELM327 Bluetooth Classic en Ajustes de Android.", color = Muted, fontSize = 13.sp)
-                OutlinedButton(onClick = onBluetoothPermission) { Text("Mostrar dispositivos emparejados") }
-                state.obdDevices.forEach { device ->
-                    TextButton(onClick = { model.selectObd(device.address) }) {
-                        Text("${if (state.selectedObdAddress == device.address) "✓ " else ""}${device.name} · ${device.address}")
-                    }
-                }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { obdConsentDialog = true }, enabled = state.selectedObdAddress != null &&
-                        state.vehicleConnection != ai.copilotdrive.core.VehicleConnectionState.CONNECTED_REAL) { Text("Conectar") }
-                    OutlinedButton(onClick = model::disconnectObd) { Text("Desconectar") }
-                }
-                OutlinedButton(onClick = model::useSimulator) { Text("Volver al simulador") }
-                Text("PIDs disponibles: ${state.obdCapabilities.sorted().joinToString().ifBlank { "No disponible" }}", color = Muted)
-                val lastReading = state.vehicle?.takeIf { !it.simulationMode && it.connectionStatus == ai.copilotdrive.core.ConnectionStatus.CONNECTED &&
-                    listOf(it.speedKmh, it.engineRpm, it.coolantTemperatureC, it.fuelLevelPercent).any { metric -> metric.availability == ai.copilotdrive.core.Availability.AVAILABLE } }?.capturedAt
-                Text("Última lectura: ${lastReading?.let { java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(it)) } ?: "No disponible"}", color = Muted)
-                state.obdError?.let { Text(it, color = Amber) }
-            }
-        }
-        item {
-            DashboardCard(Modifier.fillMaxWidth()) {
-                Eyebrow("INTELIGENCIA ARTIFICIAL")
+                Eyebrow("03 / IA")
                 Text("Comandos locales · siempre activos", modifier = Modifier.padding(top = 12.dp))
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                     Text("Activar IA externa", modifier = Modifier.weight(1f).padding(vertical = 16.dp))
@@ -250,6 +216,58 @@ private fun SettingsScreen(
                 Text(state.notice, color = Muted)
             }
         }
+        item {
+            DashboardCard(Modifier.fillMaxWidth()) {
+                Eyebrow("04 / VEHÍCULO")
+                Text(connectionLabel(state.vehicleConnection), style = MaterialTheme.typography.titleLarge)
+                Text("Experimental. Usa la app únicamente con el vehículo detenido. Empareja primero un adaptador ELM327 Bluetooth Classic en Ajustes de Android.", color = Muted, fontSize = 13.sp)
+                OutlinedButton(onClick = onBluetoothPermission) { Text("Mostrar dispositivos emparejados") }
+                state.obdDevices.forEach { device ->
+                    TextButton(onClick = { model.selectObd(device.address) }) {
+                        Text("${if (state.selectedObdAddress == device.address) "✓ " else ""}${device.name} · ${device.address}")
+                    }
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(onClick = { obdConsentDialog = true }, enabled = state.selectedObdAddress != null &&
+                        state.vehicleConnection != ai.copilotdrive.core.VehicleConnectionState.CONNECTED_REAL) { Text("Conectar") }
+                    OutlinedButton(onClick = model::disconnectObd) { Text("Desconectar") }
+                }
+                OutlinedButton(onClick = model::useSimulator) { Text("Activar modo DEMO") }
+                Text("PIDs disponibles: ${state.obdCapabilities.sorted().joinToString().ifBlank { "No disponible" }}", color = Muted)
+                val lastReading = state.vehicle?.takeIf { !it.simulationMode && it.connectionStatus == ai.copilotdrive.core.ConnectionStatus.CONNECTED &&
+                    listOf(it.speedKmh, it.engineRpm, it.coolantTemperatureC, it.fuelLevelPercent).any { metric -> metric.availability == ai.copilotdrive.core.Availability.AVAILABLE } }?.capturedAt
+                Text("Última lectura: ${lastReading?.let { java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.getDefault()).format(java.util.Date(it)) } ?: "No disponible"}", color = Muted)
+                state.obdError?.let { Text(it, color = Amber) }
+            }
+        }
+        item {
+            DashboardCard(Modifier.fillMaxWidth()) {
+                Eyebrow("05 / INTEGRACIONES")
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("Usar audio de demostración", modifier = Modifier.weight(1f).padding(vertical = 16.dp))
+                    Switch(modifier = Modifier.semantics { contentDescription = "Usar audio de demostración" }, checked = state.demoMedia, onCheckedChange = onDemoMedia)
+                }
+                Text("La demostración activa DEMO para toda la app. Para audio real, usa REAL y concede acceso a notificaciones. Solo consultamos sesiones multimedia; no leemos ni guardamos el contenido de notificaciones.", color = Muted)
+                OutlinedButton(onClick = onMediaPermission, modifier = Modifier.heightIn(min = 56.dp).padding(top = 8.dp)) { Text("Autorizar sesiones multimedia") }
+                state.sessions.forEach { session ->
+                    TextButton(onClick = { onSelectSession(session.id) }, modifier = Modifier.heightIn(min = 56.dp)) { Text("Elegir ${session.label}${if (session.playing) " · reproduciendo" else ""}") }
+                }
+                OutlinedButton(onClick = onContacts, modifier = Modifier.heightIn(min = 56.dp).padding(top = 8.dp)) { Text("Activar búsqueda de contactos") }
+                Text("Contactos solo en el dispositivo. «Llama a Mercedes» pide confirmación y abre el marcador; nunca llama automáticamente.", color = Muted, fontSize = 13.sp)
+            }
+        }
+        item { DashboardCard(Modifier.fillMaxWidth()) {
+            Eyebrow("06 / PRIVACIDAD")
+            Text("Tus datos se quedan contigo", style = MaterialTheme.typography.titleLarge)
+            Text("Sin audio ni historial persistentes. Contactos locales y marcador con confirmación. Telemetría, contactos y ubicación no se envían al LLM. Places tiene su propio consentimiento aproximado por sesión.", color = Muted)
+        } }
+        item {
+            DashboardCard(Modifier.fillMaxWidth()) {
+                Eyebrow("07 / DIAGNÓSTICOS")
+                Text("Comprueba disponibilidad y revisa observaciones sin iniciar pruebas físicas automáticamente.", color = Muted)
+                OutlinedButton(onClick = onDeviceLab, modifier = Modifier.testTag("open-device-lab")) { Text("Abrir laboratorio") }
+            }
+        }
         item { Eyebrow("DIAGNÓSTICO DEL DISPOSITIVO") }
         items(state.capabilities, key = { it.id }) { capability ->
             Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -257,7 +275,16 @@ private fun SettingsScreen(
                 Text(capabilityLabel(capability.status), color = if (capability.status == CapabilityStatus.AVAILABLE) Mint else Amber)
             }
         }
+        item { DashboardCard(Modifier.fillMaxWidth()) {
+            Eyebrow("08 / APARIENCIA")
+            Text("Instrumentación serena", style = MaterialTheme.typography.titleLarge)
+            Text("Grafito, blanco cálido y menta. Contraste fijo de cabina; tamaño de texto según Android. Widgets y presets conservados; edición solo desde laboratorio.", color = Muted)
+        } }
     }
+    if (modeDialog) AlertDialog(onDismissRequest = { modeDialog = false }, title = { Text("Activar demostración") },
+        text = { Text("Vehículo, multimedia y lugares usarán datos ficticios claramente etiquetados. Se cerrará la conexión OBD. Puedes volver a REAL cuando quieras.") },
+        confirmButton = { TextButton(onClick = { modeDialog = false; model.setOperationMode(OperationMode.DEMO) }) { Text("Activar DEMO") } },
+        dismissButton = { TextButton(onClick = { modeDialog = false }) { Text("Cancelar") } })
     if (consentDialog) AlertDialog(onDismissRequest = { consentDialog = false },
         title = { Text("Autorizar consulta externa") },
         text = { Text("Proveedor: ${state.preferences.ai.providerName.ifBlank { state.preferences.ai.endpoint.ifBlank { "sin configurar" } }}. Se enviará el texto de la consulta y hasta ocho mensajes recientes. No se enviarán contactos, ubicación ni telemetría. Puedes desactivar y borrar la clave en cualquier momento.") },

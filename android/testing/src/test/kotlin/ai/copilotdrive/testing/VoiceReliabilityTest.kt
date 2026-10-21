@@ -9,6 +9,17 @@ import org.junit.Test
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class VoiceReliabilityTest {
+    @Test fun changingSourceModeClearsOldDemoAnswerAndCancelsAudio() = runTest {
+        val h = TestHarness()
+        val v = voice(this, h)
+        v.demo("gasolina"); advanceUntilIdle()
+        assertTrue(v.state.value.message.contains("42 %"))
+        v.clearForModeChange(); advanceUntilIdle()
+        assertEquals(VoiceState.IDLE, v.state.value.state)
+        assertFalse(v.state.value.message.contains("42"))
+        assertFalse(h.focus.held)
+        assertEquals(0, h.stt.calls)
+    }
     private fun voice(scope: CoroutineScope, h: TestHarness, stt: SpeechToTextProvider = h.stt,
         tts: TextToSpeechProvider = h.tts, permission: () -> Boolean = { true }) =
         VoiceSessionCoordinator(scope, stt, tts, h.assistant, h.focus, h.clock, hasMicrophonePermission = permission)

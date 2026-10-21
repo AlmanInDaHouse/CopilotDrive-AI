@@ -21,11 +21,11 @@ class DashboardUiTest {
         compose.setContent {
             CopilotTheme {
                 Surface {
-                    DashboardScreen(DashboardState(vehicle = simulatedVehicle(0)), {}, {}, {}, {}, {})
+                    DashboardScreen(DashboardState(preferences = ai.copilotdrive.app.platform.VoicePreferences(operationMode = OperationMode.DEMO), vehicle = simulatedVehicle(0)), {}, {}, {}, {}, {})
                 }
             }
         }
-        compose.onNodeWithText("SIMULADOR · Datos de vehículo ficticios").assertExists()
+        compose.onNodeWithText("DEMO · Datos de vehículo ficticios").assertExists()
         compose.onNodeWithTag("fuel-value").assertTextEquals("42 %")
         compose.onNodeWithText("No disponible").assertExists()
     }
@@ -33,7 +33,7 @@ class DashboardUiTest {
     @Test fun demoQueryHasAnAccessibleAction() {
         var requested = ""
         compose.setContent {
-            CopilotTheme { Surface { DashboardScreen(DashboardState(vehicle = simulatedVehicle(0)), {}, {}, {}, { requested = it }, {}) } }
+            CopilotTheme { Surface { DashboardScreen(DashboardState(preferences = ai.copilotdrive.app.platform.VoicePreferences(operationMode = OperationMode.DEMO), vehicle = simulatedVehicle(0)), {}, {}, {}, { requested = it }, {}) } }
         }
         compose.onNodeWithTag("demo-fuel").assertIsDisplayed().performClick()
         assertEquals("Jarvis, cuánta gasolina queda", requested)
@@ -42,7 +42,7 @@ class DashboardUiTest {
     @Test fun unsupportedNextIsDisabled() {
         val media = DemoMediaAdapter(Clock { 0 }).state.value.copy(supportedControls = setOf(MediaControl.PLAY))
         compose.setContent {
-            CopilotTheme { Surface { DashboardScreen(DashboardState(vehicle = simulatedVehicle(0), media = media), {}, {}, {}, {}, {}) } }
+            CopilotTheme { Surface { DashboardScreen(DashboardState(preferences = ai.copilotdrive.app.platform.VoicePreferences(operationMode = OperationMode.DEMO), vehicle = simulatedVehicle(0), media = media), {}, {}, {}, {}, {}) } }
         }
         compose.onNodeWithText("Siguiente").assertIsNotEnabled()
     }
@@ -57,7 +57,7 @@ class DashboardUiTest {
     @Test fun compactLandscapeKeepsVoiceActionsVisible() {
         compose.setContent {
             CopilotTheme { Box(Modifier.requiredSize(800.dp, 480.dp)) {
-                DashboardScreen(DashboardState(vehicle = simulatedVehicle(0)), {}, {}, {}, {}, {})
+                DashboardScreen(DashboardState(preferences = ai.copilotdrive.app.platform.VoicePreferences(operationMode = OperationMode.DEMO), vehicle = simulatedVehicle(0)), {}, {}, {}, {}, {})
             } }
         }
         compose.onNodeWithTag("push-to-talk").assertIsDisplayed()

@@ -25,7 +25,7 @@ import kotlinx.coroutines.launch
 
 data class DashboardState(
     val vehicle: VehicleSnapshot? = null,
-    val vehicleConnection: VehicleConnectionState = VehicleConnectionState.SIMULATED,
+    val vehicleConnection: VehicleConnectionState = VehicleConnectionState.DISCONNECTED,
     val obdDevices: List<PairedObdDevice> = emptyList(),
     val selectedObdAddress: String? = null,
     val obdCapabilities: Set<String> = emptySet(),
@@ -42,14 +42,14 @@ data class DashboardState(
     val ttsStatus: String = "Inicializando voz…",
     val capabilities: List<Capability> = emptyList(),
     val sessions: List<MediaSessionChoice> = emptyList(),
-    val demoMedia: Boolean = true,
+    val demoMedia: Boolean = false,
     val clock: String = "--:--",
     val destination: String? = null,
     val places: PlacesState = PlacesState(),
     val placesConsent: Boolean = false,
     val placesStationary: Boolean = false,
     val placesConfigured: Boolean = BuildConfig.PLACES_ANDROID_API_KEY.isNotBlank(),
-    val notice: String = "Datos ficticios · Movimiento del vehículo desconocido",
+    val notice: String = "REAL · Movimiento del vehículo desconocido",
 )
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -70,9 +70,9 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val vehicle = VehicleContextEngine(obd, clock)
     val androidMedia = AndroidMediaAdapter(app)
     private val demoMediaAdapter = DemoMediaAdapter(clock)
-    private var demoMedia = true
+    private var demoMedia = false
     private val media = object : MediaSourceAdapter {
-        override val state = MutableStateFlow(demoMediaAdapter.state.value)
+        override val state = MutableStateFlow(MediaSnapshot())
         override suspend fun command(control: MediaControl): ToolResult {
             val result = (if (demoMedia) demoMediaAdapter else androidMedia).command(control)
             refreshMedia()
@@ -173,6 +173,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             preferences.state.catch { mutable.update { it.copy(preferencesLoaded = true, notice = "No se pudieron cargar las preferencias.") } }
                 .collect { prefs ->
+                    val modeChanged = !mutable.value.preferencesLoaded || mutable.value.preferences.operationMode != prefs.operationMode
+                    if (modeChanged) applyOperationMode(prefs.operationMode)
                     mutable.update { it.copy(preferences = prefs, preferencesLoaded = true) }
                     tts.selectedVoice = prefs.voice; tts.rate = prefs.rate; tts.pitch = prefs.pitch
                     refreshCapabilities()
@@ -259,6 +261,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         mutable.update { it.copy(selectedObdAddress = address) }
     }
     fun connectObd() {
+        if (mutable.value.preferences.operationMode != OperationMode.REAL) { mutable.update { it.copy(obdError = "Activa el modo REAL antes de conectar.") }; return }
         val address = mutable.value.selectedObdAddress ?: return
         if (!bluetooth.present()) { obd.unsupported("Este dispositivo no dispone de Bluetooth."); return }
         if (!bluetooth.permitted()) { mutable.update { it.copy(obdError = "Falta permiso Bluetooth.") }; return }
@@ -267,7 +270,21 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         vehicle.invalidate(); obd.connect(address)
     }
     fun disconnectObd() { obd.disconnect(); vehicle.invalidate() }
-    fun useSimulator() { obd.disconnect(true); vehicle.invalidate() }
+    fun useSimulator() { setOperationMode(OperationMode.DEMO) }
+    fun setOperationMode(mode: OperationMode) {
+        savePreferences(mutable.value.preferences.copy(operationMode = mode, modeNoticeRequired = false))
+    }
+    private fun applyOperationMode(mode: OperationMode) {
+        acousticProbe.cancel(); voice.clearForModeChange(); places.clear(); assistant.clearAllConversations()
+        demoMedia = mode == OperationMode.DEMO
+        demoPlaces = mode == OperationMode.DEMO
+        placesConsent = false
+        obd.disconnect(simulator = mode == OperationMode.DEMO); vehicle.invalidate()
+        if (demoMedia) androidMedia.close() else androidMedia.refresh()
+        places.clear(); refreshMedia()
+        mutable.update { it.copy(vehicle = null, destination = null, placesConsent = false,
+            notice = if (mode == OperationMode.DEMO) "DEMO · Datos ficticios, sin conexión al vehículo" else "REAL · Conecta tu adaptador OBD para consultar el vehículo") }
+    }
     fun runLocalDiagnostics() {
         val current = mutable.value
         deviceDiagnostics.local(current.preferences.ai, current.credentialSaved,
@@ -337,6 +354,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
     fun clearConversation() { assistant.clearAllConversations(); mutable.update { it.copy(notice = "Conversación borrada.") } }
     fun setDemoPlaces(enabled: Boolean) {
+        if (enabled && mutable.value.preferences.operationMode != OperationMode.DEMO) { setOperationMode(OperationMode.DEMO); return }
         demoPlaces = enabled; places.clear(); refreshCapabilities()
         mutable.update { it.copy(places = places.state.value.copy(status = if (enabled) "DEMO_READY" else if (it.placesConfigured) "READY" else "NOT_CONFIGURED"),
             notice = if (enabled) "Lugares de demostración; sin consulta real." else "Demostración desactivada.") }
@@ -407,7 +425,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             mutable.update { it.copy(notice = "No hay instalador de voces en este dispositivo.") }
         }
     }
-    fun setDemoMedia(enabled: Boolean) { demoMedia = enabled; if (enabled) androidMedia.close() else androidMedia.refresh(); refreshMedia(); refreshCapabilities() }
+    fun setDemoMedia(enabled: Boolean) { if (enabled && mutable.value.preferences.operationMode != OperationMode.DEMO) { setOperationMode(OperationMode.DEMO); return }; demoMedia = enabled; if (enabled) androidMedia.close() else androidMedia.refresh(); refreshMedia(); refreshCapabilities() }
     fun mediaControl(control: MediaControl) {
         viewModelScope.launch {
             val result = tools.execute(ToolRequest("media.${control.name.lowercase()}"))

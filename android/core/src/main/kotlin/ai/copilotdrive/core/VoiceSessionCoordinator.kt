@@ -41,6 +41,13 @@ class VoiceSessionCoordinator(
     fun listen() = start(null)
     fun demo(text: String) = start(text)
 
+    /** A source-mode change must not carry a previous demo answer into REAL. */
+    fun clearForModeChange() {
+        cancel()
+        writtenAnswer = null
+        mutable.value = VoiceSessionState()
+    }
+
     private fun start(demo: String?) {
         if (job?.isActive == true) return
         onJourney(VoiceJourneyStage.REQUEST_STARTED)

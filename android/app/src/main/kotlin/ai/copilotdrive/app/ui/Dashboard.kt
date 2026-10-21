@@ -29,18 +29,20 @@ import androidx.compose.ui.unit.sp
 import ai.copilotdrive.app.DashboardState
 import ai.copilotdrive.core.*
 
-val Mint = Color(0xFFB7F6CE)
-val Surface = Color(0xFF141C21)
-val Muted = Color(0xFFA7B4BC)
-val Amber = Color(0xFFF1BC79)
+val Mint = Cockpit.Mint
+val Surface = Cockpit.Panel
+val Muted = Cockpit.Muted
+val Amber = Cockpit.Warning
 
 @Composable
 fun CopilotTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = darkColorScheme(
-        primary = Mint, onPrimary = Color(0xFF10251B), background = Color(0xFF0B1014),
-        surface = Surface, onSurface = Color(0xFFF0F5F3), onSurfaceVariant = Muted,
-        secondary = Amber, outline = Color(0xFF324047),
-    ), content = content)
+        primary = Mint, onPrimary = Color(0xFF10251B), background = Cockpit.Background,
+        surface = Surface, onSurface = Cockpit.Ink, onBackground = Cockpit.Ink,
+        surfaceVariant = Cockpit.Raised, onSurfaceVariant = Muted,
+        secondary = Mint, error = Cockpit.Error, outline = Cockpit.Border,
+    ), typography = Cockpit.Typography,
+        shapes = Shapes(small = Cockpit.ControlShape, medium = Cockpit.PanelShape, large = Cockpit.PanelShape), content = content)
 }
 
 @Composable
@@ -129,9 +131,11 @@ fun LegacyDashboardScreen(
 }
 
 @Composable
-fun DashboardCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Surface(modifier, shape = RoundedCornerShape(22.dp), color = Surface, border = BorderStroke(1.dp, Color(0xFF29363D))) {
-        Column(Modifier.padding(22.dp), content = content)
+fun DashboardCard(modifier: Modifier = Modifier, role: PanelRole = PanelRole.STANDARD, content: @Composable ColumnScope.() -> Unit) {
+    val color = when (role) { PanelRole.STANDARD -> Surface; PanelRole.VEHICLE -> Cockpit.Raised; PanelRole.VOICE -> Cockpit.VoiceSurface }
+    Surface(modifier, shape = if (role == PanelRole.VOICE) Cockpit.VoiceShape else Cockpit.PanelShape,
+        color = color, contentColor = Cockpit.Ink, border = if (role == PanelRole.STANDARD) BorderStroke(1.dp, Cockpit.Border) else null) {
+        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(8.dp), content = content)
     }
 }
 
@@ -144,37 +148,57 @@ fun metricLabel(metric: Metric?): String {
 
 @Composable
 internal fun VehicleCard(vehicle: VehicleSnapshot?, modifier: Modifier = Modifier, compact: Boolean = false) {
-    DashboardCard(modifier.fillMaxWidth()) {
-        Eyebrow(if (vehicle?.simulationMode == true) "01 / VEHÍCULO SIMULADO" else "01 / VEHÍCULO OBD")
-        Spacer(Modifier.height(18.dp))
-        Text("Combustible", color = Muted)
-        Text(metricLabel(vehicle?.fuelLevelPercent), fontSize = if (compact) 30.sp else 40.sp, fontWeight = FontWeight.Light, color = Mint, modifier = Modifier.testTag("fuel-value"))
-        val fuel = vehicle?.fuelLevelPercent
-        val fraction = if (fuel?.availability in setOf(Availability.AVAILABLE, Availability.SIMULATED)) ((fuel?.value ?: 0.0) / 100).toFloat().coerceIn(0f, 1f) else 0f
-        LinearProgressIndicator(progress = { fraction }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp).clearAndSetSemantics {}, color = Mint, trackColor = Color(0xFF2B3B34))
-        MetricRow("Velocidad", metricLabel(vehicle?.speedKmh))
-        MetricRow("RPM", metricLabel(vehicle?.engineRpm))
-        MetricRow("Refrigerante", metricLabel(vehicle?.coolantTemperatureC))
-        if (!compact) {
-            MetricRow("Autonomía", metricLabel(vehicle?.vehicleRangeKm))
+    val demo = vehicle?.simulationMode == true
+    val connected = vehicle?.connectionStatus == ConnectionStatus.CONNECTED
+    DashboardCard(modifier.fillMaxWidth(), role = PanelRole.VEHICLE) {
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            CockpitMark(CockpitSymbol.VEHICLE)
+            Eyebrow(if (demo) "VEHÍCULO / DEMO" else "VEHÍCULO / OBD-II")
         }
-        Text("Estado: ${vehicle?.fuelLevelPercent?.availability?.name ?: "DISCONNECTED"}", color = Amber, fontSize = 12.sp)
-        Text(if (vehicle?.simulationMode == true) "Datos ficticios" else if (vehicle?.connectionStatus == ConnectionStatus.CONNECTED) "Lecturas OBD · ${vehicle.source}" else "OBD sin conectar",
-            color = Muted, fontSize = 12.sp, modifier = Modifier.padding(top = 12.dp))
+        Text(if (demo) "Cabina de demostración" else if (connected) "Vehículo conectado" else "Conecta tu vehículo",
+            style = if (compact) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineLarge,
+            modifier = Modifier.padding(top = 4.dp))
+        val sourceLabel = if (demo) "Datos ficticios · sin lectura del coche" else if (connected) "${vehicle?.source} · solo lectura" else "OBD desconectado · conexión manual en Ajustes"
+        if (!compact) {
+            Text(sourceLabel, color = if (demo) Amber else Muted, fontSize = 13.sp)
+            HorizontalDivider(color = Cockpit.Border, modifier = Modifier.padding(vertical = 8.dp))
+        }
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text("COMBUSTIBLE", color = Muted, style = MaterialTheme.typography.labelSmall)
+                val fuelText = telemetryLabel(vehicle, vehicle?.fuelLevelPercent, "012F")
+                Text(fuelText, color = if (connected) Mint else Cockpit.Ink,
+                    style = if (vehicle?.fuelLevelPercent?.value != null && vehicle.fuelLevelPercent.availability in setOf(Availability.AVAILABLE, Availability.SIMULATED)) Cockpit.Numbers else MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.testTag("fuel-value").padding(top = 4.dp))
+            }
+        }
+        val fuel = vehicle?.fuelLevelPercent
+        if (fuel?.availability in setOf(Availability.AVAILABLE, Availability.SIMULATED) && connected) {
+            LinearProgressIndicator(progress = { ((fuel?.value ?: 0.0) / 100).toFloat().coerceIn(0f, 1f) },
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).clearAndSetSemantics {}, color = Mint, trackColor = Cockpit.Raised)
+        }
+        if (compact) Text(sourceLabel, color = if (demo) Amber else Muted, fontSize = 13.sp)
+        MetricRow("Velocidad", telemetryLabel(vehicle, vehicle?.speedKmh, "010D"))
+        MetricRow("Motor", telemetryLabel(vehicle, vehicle?.engineRpm, "010C"))
+        if (!compact) {
+            MetricRow("Refrigerante", telemetryLabel(vehicle, vehicle?.coolantTemperatureC, "0105"))
+            MetricRow("Autonomía", telemetryLabel(vehicle, vehicle?.vehicleRangeKm))
+        }
+        if (connected && !demo) Text("Fuente: ${vehicle?.source} · las lecturas caducan a los 10 s", color = Muted, fontSize = 12.sp)
     }
 }
 
 @Composable private fun MetricRow(name: String, value: String) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 5.dp).semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.SpaceBetween) {
+    Row(Modifier.fillMaxWidth().padding(vertical = 2.dp).semantics(mergeDescendants = true) {}, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(name, color = Muted, fontSize = 14.sp, modifier = Modifier.weight(1f))
-        Text(value, fontSize = 14.sp, modifier = Modifier.weight(1f))
+        Text(value, fontSize = 14.sp, modifier = Modifier.weight(1.15f), fontFamily = androidx.compose.ui.text.font.FontFamily.Monospace)
     }
 }
 
 @Composable
 internal fun MediaCard(media: MediaSnapshot, artwork: Bitmap?, onMedia: (MediaControl) -> Unit, modifier: Modifier = Modifier, compact: Boolean = false) {
     DashboardCard(modifier.fillMaxWidth()) {
-        Eyebrow(if (media.simulated) "02 / AUDIO SIMULADO" else "02 / AUDIO ANDROID")
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) { CockpitMark(CockpitSymbol.AUDIO); Eyebrow(if (media.simulated) "AUDIO / DEMO" else "MULTIMEDIA") }
         Spacer(Modifier.height(18.dp))
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
             if (artwork != null && !compact) {
@@ -185,12 +209,12 @@ internal fun MediaCard(media: MediaSnapshot, artwork: Bitmap?, onMedia: (MediaCo
                 drawCircle(Mint, size.minDimension * 0.06f)
             }
             Column(Modifier.weight(1f)) {
-                Text(media.title ?: "Tu música, aquí", fontSize = 20.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                Text(media.artist ?: "Abre un reproductor compatible", color = Muted, fontSize = 13.sp, maxLines = 2)
+                Text(media.title ?: "Sin reproducción", fontSize = 20.sp, fontWeight = FontWeight.Medium, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                Text(media.artist ?: "Selecciona una sesión real en Ajustes", color = Muted, fontSize = 13.sp, maxLines = 2)
             }
         }
         Text(media.sourceApp ?: "Sin sesión", color = Muted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.padding(top = 14.dp))
-        Text(if (media.simulated) "Demostración de controles · sin sonido" else media.playbackStatus.name.lowercase(), fontSize = 12.sp, color = Amber, modifier = Modifier.padding(top = 6.dp))
+        Text(if (media.simulated) "Demostración de controles · sin sonido" else when (media.playbackStatus) { PlaybackStatus.PLAYING -> "Reproduciendo"; PlaybackStatus.PAUSED -> "En pausa"; PlaybackStatus.STOPPED -> "Detenido"; PlaybackStatus.UNAVAILABLE -> "Esperando una sesión Android" }, fontSize = 12.sp, color = Amber, modifier = Modifier.padding(top = 6.dp))
         Spacer(Modifier.height(16.dp))
         val duration = media.durationMs
         val position = media.positionMs
@@ -232,11 +256,15 @@ private fun NavigationCard(destination: String?, onListen: () -> Unit, modifier:
 
 @Composable internal fun AssistantOrb(state: VoiceState) {
     val active = state in setOf(VoiceState.LISTENING, VoiceState.SPEAKING)
-    val radius by animateFloatAsState(if (active) 0.40f else 0.28f, label = "voice-state")
-    Canvas(Modifier.size(68.dp)) {
-        drawCircle(Mint.copy(alpha = 0.14f), size.minDimension * 0.49f)
-        drawCircle(if (state == VoiceState.ERROR) Amber else Mint, size.minDimension * radius, style = Stroke(2.dp.toPx()))
-        drawCircle(Mint, size.minDimension * 0.08f)
+    val tint = if (state == VoiceState.ERROR) Cockpit.Error else Mint
+    Canvas(Modifier.size(64.dp).clearAndSetSemantics {}) {
+        drawCircle(tint.copy(alpha = .08f), size.minDimension * .49f)
+        drawArc(tint.copy(alpha = .4f), 140f, 260f, false, style = Stroke(1.dp.toPx()))
+        val heights = if (active) listOf(.25f, .55f, .8f, .45f, .65f) else listOf(.12f, .3f, .48f, .3f, .12f)
+        heights.forEachIndexed { i, height ->
+            val x = size.width * (.28f + i * .11f)
+            drawLine(tint, Offset(x, size.height * (.5f - height * .28f)), Offset(x, size.height * (.5f + height * .28f)), 2.dp.toPx())
+        }
     }
 }
 

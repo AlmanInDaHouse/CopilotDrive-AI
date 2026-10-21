@@ -1,5 +1,20 @@
 # CopilotDrive-AI
 
+Sprint 11: REAL is the default and a persisted OperationMode independent of connection.
+No silent fallback to vehicle/media/Places demo. Existing unversioned defaults migrate
+to REAL with an acknowledged notice; preserve voice, consents and dashboard DataStore.
+Demo must be explicit and labelled in visible AND spoken responses. A mode transition
+clears previous source answers/results, cancels audio and closes OBD; ordinary voice
+cancellation still preserves the written answer. Do not auto-connect Bluetooth.
+Distinguish missing PID, NO DATA, disconnected and expired telemetry without changing
+the v1 wire contract. Use Cockpit tokens/components for native UI; keep eight widget
+types, presets and lab safety. Follow docs/SPRINT11_REPORT.md for evidence and pending
+physical validation of versionCode 2; Sprint10.1 acoustics do not qualify a new APK.
+Run RealModeTest, OperationModeTest, VoiceReliabilityTest, DashboardPresentationTest,
+RealModeJourneyTest and the existing accessibility/layout suites for these boundaries.
+RealModeJourneyTest and sprint11_visual_matrix write fixtures/display overrides and
+belong only on dedicated disposable AVDs; preserve the original emulator and phone.
+
 Conventional Android APK for open devices, not Android Auto, AAOS or CarPlay.
 Keep the Python/web prototype functional. Android must work without Python or API keys.
 

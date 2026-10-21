@@ -26,7 +26,7 @@ class AccessibilityTest {
         for (label in listOf("Permitir motor STT del sistema; puede enviar audio a su proveedor", "Velocidad de voz", "Tono de voz",
             "Usar audio de demostración", "Activar IA externa", "Tiempo de espera del proveedor", "Herramientas estructuradas", "Compartir contexto del vehículo")) {
             compose.onNodeWithTag("settings").performScrollToNode(hasContentDescription(label))
-            compose.onNodeWithContentDescription(label).assertIsDisplayed()
+            compose.onNodeWithContentDescription(label).performScrollTo().assertIsDisplayed()
         }
         compose.onNodeWithContentDescription("Compartir contexto del vehículo").assertIsNotEnabled()
             .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "No disponible; solo se envía texto"))

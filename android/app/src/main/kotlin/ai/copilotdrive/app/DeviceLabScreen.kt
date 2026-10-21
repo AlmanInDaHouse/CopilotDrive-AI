@@ -25,10 +25,7 @@ fun DeviceLabScreen(model: DashboardViewModel, onBack: () -> Unit, onPlaces: () 
     LazyColumn(contentPadding = PaddingValues(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier.testTag("device-lab")) {
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Laboratorio del dispositivo", modifier = Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
-                OutlinedButton(onClick = onBack) { Text("Volver") }
-            }
+            ScreenHeading("DIAGNÓSTICOS", "Device Lab", onBack)
             Text("Disponibilidad no equivale a funcionamiento verificado. Las pruebas físicas requieren intervención y vehículo detenido.", color = Muted)
         }
         item {

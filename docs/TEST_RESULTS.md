@@ -1,3 +1,23 @@
+# Sprint 11 — resultados finales
+
+Código `7463623`; APK `37adf5ee0bcc7668e7aebb529feb26feb8b28bca155c48f5456feb6ffd56f606`. Python 56, core 51, testing 77, Android unit 6,
+todos aprobados, sin fallos/errores/omitidos. Instrumentación final: 42/42 en cada
+API26/30/35, mismos APK/testAPK verificados antes y después, listeners restaurados.
+232 casos distintos; 126 ejecuciones instrumentadas finales de 42 casos.
+Lint 0 errores/12 avisos existentes; builds debug/AndroidTest aprobados.
+Matriz 7 capturas con overrides restaurados y emulador original preservado por hashes.
+Python/reglas de repositorio y diff comprobados. No se eliminaron tests fallidos.
+
+Intentos previos y correcciones, limitaciones de TTS/API26 y comandos exactos en
+[SPRINT11_REPORT.md](SPRINT11_REPORT.md). Jank BLOCKED por presión RAM, no medido como
+cero. Instalación y apertura autorizadas en HONOR ABR-NX1/API36 el 2026-10-21:
+`install -r` Success, versión 2/SHA instalado idéntico, ambos hashes DataStore
+conservados antes de abrir y MainActivity Status OK/en primer plano por ADB.
+Validación humana de este APK PENDING; no se transfieren observaciones acústicas
+Sprint10.1 al APK nuevo. Las secciones siguientes son historial de builds anteriores.
+
+---
+
 # Sprint10 — resultados de la candidata del piloto
 
 Los resultados finales, comandos, APK y limitaciones están en SPRINT10_REPORT.md.

@@ -51,7 +51,7 @@ class DashboardAdaptiveTest {
             DashboardScreen(DashboardState(), {}, {}, {}, {}, {})
         } } }
         compose.onNodeWithTag("fuel-value").assertTextEquals("No disponible")
-        compose.onNodeWithTag("telemetry-source").assertTextContains("Sin datos", substring = true)
+        compose.onNodeWithTag("telemetry-source").assertTextContains("OBD desconectado", substring = true)
         compose.onNodeWithTag("push-to-talk").assertIsDisplayed()
     }
 }

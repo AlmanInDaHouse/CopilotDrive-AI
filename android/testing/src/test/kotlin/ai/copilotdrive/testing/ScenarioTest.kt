@@ -24,7 +24,7 @@ class ScenarioTest {
         val h = TestHarness()
         fun real(m: Metric) = m.copy(source = "obd-test", availability = if (m.value == null) Availability.UNAVAILABLE else Availability.AVAILABLE, quality = Quality.SENSOR_REPORTED)
         val s = h.vehicle.value
-        h.vehicle.value = s.copy(source = "obd-test", simulationMode = false, speedKmh = real(s.speedKmh), engineRpm = real(s.engineRpm), fuelLevelPercent = real(s.fuelLevelPercent), coolantTemperatureC = real(s.coolantTemperatureC), batteryVoltage = real(s.batteryVoltage), vehicleRangeKm = real(s.vehicleRangeKm))
+        h.vehicle.value = s.copy(source = "obd-test", simulationMode = false, speedKmh = real(s.speedKmh), engineRpm = real(s.engineRpm), fuelLevelPercent = real(s.fuelLevelPercent), coolantTemperatureC = real(s.coolantTemperatureC), batteryVoltage = real(s.batteryVoltage), vehicleRangeKm = real(s.vehicleRangeKm), supportedCapabilities = setOf("012F", "0105"))
         val reply = h.ask("gasolina")
         assertTrue(reply.message.contains("Fuente obd-test. Combustible: 42 %"))
         assertTrue(h.media.calls.isEmpty())
