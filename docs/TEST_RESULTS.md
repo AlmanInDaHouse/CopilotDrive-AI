@@ -10,7 +10,10 @@ Python/reglas de repositorio y diff comprobados. No se eliminaron tests fallidos
 
 Intentos previos y correcciones, limitaciones de TTS/API26 y comandos exactos en
 [SPRINT11_REPORT.md](SPRINT11_REPORT.md). Jank BLOCKED por presión RAM, no medido como
-cero. Validación física de este APK PENDING; no se transfieren observaciones acústicas
+cero. Instalación y apertura autorizadas en HONOR ABR-NX1/API36 el 2026-10-21:
+`install -r` Success, versión 2/SHA instalado idéntico, ambos hashes DataStore
+conservados antes de abrir y MainActivity Status OK/en primer plano por ADB.
+Validación humana de este APK PENDING; no se transfieren observaciones acústicas
 Sprint10.1 al APK nuevo. Las secciones siguientes son historial de builds anteriores.
 
 ---

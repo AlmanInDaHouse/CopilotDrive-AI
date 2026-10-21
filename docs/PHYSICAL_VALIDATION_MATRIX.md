@@ -1,6 +1,6 @@
 # Sprint 11 — nueva candidata, evidencia física pendiente
 
-`ai.copilotdrive.app`, versionCode 2, 0.11.0-debug. El nuevo APK cambia UI y selección de fuentes: los resultados físicos del APK Sprint10.1 no se transfieren automáticamente. No se ha instalado ni operado el teléfono durante Sprint11.
+`ai.copilotdrive.app`, versionCode 2, 0.11.0-debug. El nuevo APK cambia UI y selección de fuentes: los resultados físicos del APK Sprint10.1 no se transfieren automáticamente. Instalación y apertura autorizadas realizadas el 2026-10-21 en HONOR 400 Lite / ABR-NX1, Android 16/API36: firma y SHA del APK instalado comprobados, `install -r` Success, MainActivity Status OK y en primer plano. Ambos hashes DataStore se conservaron tras instalar y antes de abrir. Evidencia ADB en el acta local ignorada `artifacts/sprint11/honor-install-launch.json`; pruebas humanas de este APK pendientes.
 
 | Escenario Sprint11 | Estado | Método pendiente |
 |---|---|---|

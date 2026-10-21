@@ -2,7 +2,8 @@
 
 2026-10-21 · Europe/Madrid. Implementación nativa y candidata debug preparadas.
 **REAL predeterminado, DEMO explícito, sin cifras vehiculares ficticias en REAL.**
-Pruebas funcionales aprobadas; validación física de este APK y rendimiento controlado pendientes.
+Pruebas funcionales aprobadas; instalación/apertura en HONOR comprobadas por ADB.
+Validación humana de este APK y rendimiento controlado pendientes.
 
 ## Estado canónico y preservación
 
@@ -13,7 +14,7 @@ Sprint10 `de7c4c8` es ancestro de Sprint10.1 y de ese merge. Sprint10.1 está pu
 Sprint10 no tenía rama remota separada, pero sus commits están incluidos en main.
 Se creó `feat/sprint11-real-mode-premium-ui` desde el merge canónico. No rebase,
 mezcla de historias, pérdida de commits ni alteración del acta física Sprint10.1.
-No push, PR remota, merge ni release.
+Push autorizado posteriormente por el usuario; sin PR remota, merge ni release.
 
 ## A. Skills investigadas y usadas
 
@@ -138,7 +139,7 @@ restaurados; fuente hasta 200 % adicionalmente ejercitada por tests adaptativos.
 
 Archivo local: `artifacts/sprint11/CopilotDrive-AI-sprint11-debug.apk`.
 Paquete `ai.copilotdrive.app`, **0.11.0-debug / versionCode 2**, min 26, target 35,
-21,907,413 bytes. APK Android convencional, sin release ni instalación física.
+21,907,413 bytes. APK Android convencional, sin release; instalado en HONOR según sección L.
 
 SHA-256:
 ```text
@@ -178,16 +179,20 @@ APK y ambos hashes DataStore exactamente iguales a los registrados antes del tra
 
 ## L. Guía HONOR 400 Lite
 
-[Procedimiento completo](NEXT_STEPS.md): conectar, preflight pasivo de firma/versión
-instaladas, presentar APK/hash exactos y pedir autorización explícita antes de instalar.
-Actualización compatible con `install -r` solo después de autorizar; no uninstall,
-downgrade ni clear-data. Se conservan paquete, firma, rutas DataStore y schema layout.
-La comprobación live del teléfono sigue pendiente: no se garantiza el estado de una
-instalación que no se ha inspeccionado en esta campaña.
+El 2026-10-21 el usuario solicitó instalar y abrir la app en su móvil. El preflight
+pasivo en HONOR 400 Lite / ABR-NX1, Android 16/API36, confirmó firma coincidente y
+compatibilidad. Actualización versionCode 1 → 2 mediante `install -r`: Success.
+El SHA-256 del base.apk instalado coincide exactamente con la candidata de sección I.
+Los hashes de ambos DataStore (preferencias y layout) permanecieron iguales después
+de instalar y antes del primer arranque. MainActivity arrancó con Status OK y ADB
+confirmó `topResumedActivity` del paquete. No uninstall, downgrade ni clear-data.
+Acta y logs locales ignorados en `artifacts/sprint11/honor-install-launch.json`,
+`honor-preflight.json`, `honor-datastore-*-install.txt` y `honor-launch.txt`.
+[Procedimiento y pruebas pendientes](NEXT_STEPS.md).
 
 Probar UI, voz real, gasolina sin OBD, DEMO explícito, persistencia, regreso a REAL,
 cancelación/fondo y legibilidad vertical/horizontal. Registrar intentos y observación
-humana del APK exacto. **No se ha instalado ni modificado el teléfono.**
+humana del APK exacto. La instalación y apertura no califican acústica, OBD o UI OEM.
 
 ## M. Pendientes externos
 
@@ -206,7 +211,7 @@ sin trasladar arbitrariamente esta Activity a Android Auto.
 
 ## O. Pasos para PR
 
-Revisar commits, diff contra `origin/main`, informes y capturas; esperar autorización
-para `git push -u origin feat/sprint11-real-mode-premium-ui`. Después abrir comparación
+Revisar commits, diff contra `origin/main`, informes y capturas; el usuario autorizó
+`git push -u origin feat/sprint11-real-mode-premium-ui`. Después abrir comparación
 main...rama y esperar CI Android/Tests. Título y descripción sugeridos en
-[NEXT_STEPS.md](NEXT_STEPS.md). No se ha publicado, fusionado ni liberado nada.
+[NEXT_STEPS.md](NEXT_STEPS.md). Sin PR remota, merge ni release.

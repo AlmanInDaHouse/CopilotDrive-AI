@@ -2,16 +2,27 @@
 
 La candidata 0.11.0-debug/versionCode 2 implementa REAL y la nueva cabina Compose.
 Base: `origin/main` `be3344c` contiene Sprint10.1, incluido el acta física previa.
-Rama local: `feat/sprint11-real-mode-premium-ui`. Sin push/merge/release.
+Rama: `feat/sprint11-real-mode-premium-ui`. Push autorizado por el usuario; sin merge/release.
 Informe y APK exacto: [SPRINT11_REPORT.md](SPRINT11_REPORT.md).
 
-## Antes de instalar
+## Instalación realizada — 2026-10-21
+
+El usuario autorizó instalar y abrir la app. Preflight pasivo aprobado en HONOR
+400 Lite / ABR-NX1, Android 16/API36: misma firma, actualización versionCode 1 → 2.
+`adb install -r` terminó en Success; el SHA-256 instalado coincide con el informe.
+Los hashes de preferencias y layout permanecieron iguales tras instalar y antes
+de abrir. MainActivity arrancó con Status OK y quedó como actividad en primer plano.
+Logs y acta locales ignorados: `artifacts/sprint11/honor-install-launch.json`,
+`honor-preflight.json`, `honor-datastore-*-install.txt` y `honor-launch.txt`.
+La validación humana de voz, UI e integraciones de este APK sigue pendiente.
+
+## Procedimiento para otra instalación
 
 1. Conectar HONOR 400 Lite y ejecutar **solo** preflight pasivo:
    `python scripts/pilot_package.py --apk artifacts/sprint11/CopilotDrive-AI-sprint11-debug.apk --serial SERIAL --out artifacts/sprint11/honor-preflight.json`.
 2. Comparar paquete, minSdk, firma y versión de la app instalada con la candidata.
    La candidata se compara además con el APK Sprint10 archivado: mismo paquete y
-   certificado, versionCode 1 → 2. La comprobación live del teléfono sigue pendiente.
+   certificado, versionCode 1 → 2. Volver a comprobar el estado live de cada destino.
 3. Presentar el SHA-256 del informe y solicitar autorización explícita antes de
    instalar. No ejecutar `install`, `am start`, permisos, audio ni capturas físicas
    por el mero hecho de conectar el teléfono.
