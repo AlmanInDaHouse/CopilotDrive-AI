@@ -20,6 +20,7 @@ class StabilityJourneyTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     private fun dashboard() {
         compose.waitUntil(15_000) { compose.onAllNodesWithTag("dashboard").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(15_000) { compose.onAllNodesWithTag("dashboard-ready").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("push-to-talk").assertIsDisplayed()
     }
     private fun action(container: String, tag: String) {

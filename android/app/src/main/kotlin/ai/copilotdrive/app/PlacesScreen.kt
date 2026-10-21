@@ -24,13 +24,11 @@ fun PlacesScreen(state: DashboardState, model: DashboardViewModel, onBack: () ->
     var consentDialog by remember { mutableStateOf(false) }
     val places = state.places
     val selected = places.selection?.let { selection -> places.results.singleOrNull { it.providerId == selection.selectedId } }
-    LazyColumn(Modifier.fillMaxSize().testTag("places-screen"), contentPadding = PaddingValues(24.dp),
+    LazyColumn(Modifier.fillMaxSize().testTag("places-screen").semantics { stateDescription = "Estado: ${places.status}" }, contentPadding = PaddingValues(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)) {
         item {
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text("Lugares cercanos", modifier = Modifier.weight(1f).semantics { heading() }, style = MaterialTheme.typography.headlineMedium)
-                OutlinedButton(onClick = onBack, modifier = Modifier.heightIn(min = 56.dp)) { Text("Volver") }
-            }
+            ScreenHeading("EXPLORAR", "Lugares cercanos", onBack)
+            ModeBadge(state.preferences.operationMode)
             Text("Exploración solo en laboratorio detenido. No se comprueba el movimiento automáticamente.", color = Amber)
             Row { Checkbox(checked = stopped, onCheckedChange = model::setPlacesStationary, modifier = Modifier.testTag("places-stopped").semantics { contentDescription = "Estoy en un entorno detenido" }); Text("Estoy en un entorno detenido") }
         }
@@ -38,7 +36,7 @@ fun PlacesScreen(state: DashboardState, model: DashboardViewModel, onBack: () ->
             DashboardCard {
                 Eyebrow("FUENTE Y PRIVACIDAD")
                 Text("Ubicación: ${places.location?.availability?.name ?: "sin consultar"} · ${places.location?.source ?: "sin fuente"}")
-                places.location?.let { fix -> fix.accuracyMeters?.let { Text("Precisión informada: ~${it.toInt()} m · fix ${fix.capturedAt}", color = Muted) } }
+                places.location?.let { fix -> fix.accuracyMeters?.let { Text("Precisión informada: ~${it.toInt()} m", color = Muted) } }
                 Text("Proveedor: ${if (places.demo) "SIMULACIÓN" else if (state.placesConfigured) "Google Places" else "NOT_CONFIGURED"}")
                 Text("Estado: ${places.status}", color = Muted)
                 if (state.placesConfigured && !places.demo) {
@@ -47,10 +45,10 @@ fun PlacesScreen(state: DashboardState, model: DashboardViewModel, onBack: () ->
                     else OutlinedButton(onClick = { model.setPlacesConsent(false) }) { Text("Revocar autorización") }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text("Modo de prueba · datos ficticios", modifier = Modifier.weight(1f))
+                    Text("Demostración · activa modo DEMO global", modifier = Modifier.weight(1f))
                     Switch(checked = places.demo, onCheckedChange = model::setDemoPlaces, modifier = Modifier.testTag("places-demo").semantics { contentDescription = "Modo de prueba de lugares; datos ficticios" })
                 }
-                if (!state.placesConfigured && !places.demo) Text("Configura un proveedor o activa la demostración.", color = Amber)
+                if (!state.placesConfigured && !places.demo) Text("NOT_CONFIGURED · Añade una clave de Google Places al compilar. Las búsquedas reales requieren consentimiento; no hay consultas automáticas.", color = Muted)
             }
         }
         item {

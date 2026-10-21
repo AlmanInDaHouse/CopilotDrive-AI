@@ -78,9 +78,27 @@ class ToolRegistry(
         }
     }
 
-    private suspend fun dispatch(request: ToolRequest): ToolResult = when (request.toolId) {
+    private suspend fun dispatch(request: ToolRequest): ToolResult { return when (request.toolId) {
         "vehicle.get_fuel", "vehicle.get_range", "vehicle.get_temperature", "vehicle.get_snapshot" -> {
             val snapshot = vehicle.snapshot()
+            if (!snapshot.simulationMode && snapshot.connectionStatus == ConnectionStatus.DISCONNECTED) {
+                return ToolResult.denied(request.toolId, "DISCONNECTED",
+                    if (request.toolId == "vehicle.get_fuel") "No puedo consultar el combustible porque todavía no estoy conectado al vehículo."
+                    else "Todavía no estoy conectado al vehículo. Conecta un adaptador OBD desde Ajustes.")
+            }
+            val requestedMetric = when (request.toolId) {
+                "vehicle.get_fuel" -> snapshot.fuelLevelPercent to "012F"
+                "vehicle.get_temperature" -> snapshot.coolantTemperatureC to "0105"
+                else -> null
+            }
+            requestedMetric?.let { (metric, pid) ->
+                when (telemetryState(snapshot, metric, pid)) {
+                    TelemetryState.UNSUPPORTED -> return ToolResult.denied(request.toolId, "UNSUPPORTED", "El vehículo no ofrece ese dato mediante los PIDs OBD disponibles. No es compatible con esta lectura.")
+                    TelemetryState.STALE -> return ToolResult.denied(request.toolId, "STALE", (if (snapshot.simulationMode) "Simulación. " else "") + "La última lectura está obsoleta; el dato ha caducado. Espera una lectura nueva o reconecta el adaptador manualmente.")
+                    TelemetryState.UNAVAILABLE -> return ToolResult.denied(request.toolId, "UNAVAILABLE", (if (snapshot.simulationMode) "Simulación. " else "") + "Esa lectura no está disponible.")
+                    else -> Unit
+                }
+            }
             val prefix = if (snapshot.simulationMode) "Simulación. " else "Fuente ${snapshot.source}. "
             val message = when (request.toolId) {
                 "vehicle.get_fuel" -> describe("Combustible", snapshot.fuelLevelPercent)
@@ -133,7 +151,7 @@ class ToolRegistry(
         "navigation.open_selected_place" -> places?.open(request.arguments.getValue("provider"))
             ?: ToolResult.denied(request.toolId, "NOT_CONFIGURED", "Proveedor de lugares no configurado.")
         else -> ToolResult.denied(request.toolId, "NOT_CONFIGURED", "El proveedor de lugares no está configurado.")
-    }
+    } }
 
     private fun describe(label: String, metric: Metric): String = when (metric.availability) {
         Availability.AVAILABLE, Availability.SIMULATED -> "$label: ${formatNumber(metric.value!!)} ${metric.unit}."

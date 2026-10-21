@@ -109,9 +109,9 @@ class BluetoothObdProvider(
             "OBD $id: ${status.name}; verificar hardware y vehículo por separado.",
             if (status == DiagnosticStatus.FAIL) "Revisa emparejamiento, permisos, alimentación y compatibilidad ELM." else null))
     }
-    private val mutableState = MutableStateFlow(VehicleConnectionState.SIMULATED)
+    private val mutableState = MutableStateFlow(VehicleConnectionState.DISCONNECTED)
     val state: StateFlow<VehicleConnectionState> = mutableState
-    private val mutableSnapshot = MutableStateFlow(simulatedVehicle(clock.now()))
+    private val mutableSnapshot = MutableStateFlow(disconnectedSnapshot(clock.now()))
     val readings: StateFlow<VehicleSnapshot> = mutableSnapshot
     private val mutableCapabilities = MutableStateFlow<Set<ObdWireRequest>>(emptySet())
     val capabilities: StateFlow<Set<ObdWireRequest>> = mutableCapabilities

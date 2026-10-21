@@ -27,6 +27,7 @@ class BluetoothObdTest {
     @Test fun `simulator remains fresh after a long onboarding delay`() = runTest {
         val clock = DeterministicClock()
         val provider = BluetoothObdProvider(FakeBluetoothTransport(), clock, backgroundScope)
+        provider.disconnect(true) // Explicit demonstration; real mode is now the initial state.
         clock.advance(60_000)
         val snapshot = provider.snapshot()
         assertEquals(42.0, snapshot.fuelLevelPercent.value)

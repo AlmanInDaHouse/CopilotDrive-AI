@@ -7,6 +7,10 @@ import org.junit.Test
 
 class AppFlowTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @org.junit.Before fun initialRealMode() {
+        kotlinx.coroutines.runBlocking { ai.copilotdrive.app.platform.Preferences(compose.activity).save(ai.copilotdrive.app.platform.VoicePreferences(onboarded = true)) }
+        compose.activityRule.scenario.recreate()
+    }
 
     @Test fun placesWithoutConsentOrProviderCannotSearch() {
         compose.waitUntil(10_000) {
@@ -40,12 +44,12 @@ class AppFlowTest {
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("dashboard").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("demo-fuel").assertIsDisplayed().performClick()
         compose.waitUntil(10_000) {
-            compose.onAllNodes(hasText("Simulación. Combustible: 42 %", substring = true)).fetchSemanticsNodes().isNotEmpty()
+            compose.onAllNodes(hasText("No puedo consultar el combustible porque todavía no estoy conectado", substring = true)).fetchSemanticsNodes().isNotEmpty()
         }
-        compose.onNodeWithTag("voice-status").assertTextContains("Simulación. Combustible: 42 %", substring = true)
+        compose.onNodeWithTag("voice-status").assertTextContains("No puedo consultar el combustible porque todavía no estoy conectado", substring = true)
     }
 
-    @Test fun obdSettingsRequireAdapterSelectionAndShowSimulatorFallback() {
+    @Test fun obdSettingsRequireAdapterSelectionAndExplicitDemo() {
         compose.waitUntil(10_000) {
             compose.onAllNodesWithTag("onboarding").fetchSemanticsNodes().isNotEmpty() ||
                 compose.onAllNodesWithTag("dashboard").fetchSemanticsNodes().isNotEmpty()
@@ -56,10 +60,10 @@ class AppFlowTest {
         compose.waitUntil(5_000) { compose.onAllNodesWithTag("dashboard").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithText("Ajustes").performClick()
         compose.onNodeWithText("Estoy en un entorno detenido").performClick()
-        compose.onNodeWithTag("settings").performScrollToNode(hasText("VEHÍCULO · OBD-II"))
-        compose.onNodeWithText("VEHÍCULO · OBD-II").assertIsDisplayed()
+        compose.onNodeWithTag("settings").performScrollToNode(hasText("04 / VEHÍCULO"))
+        compose.onNodeWithText("04 / VEHÍCULO").assertIsDisplayed()
         compose.onNodeWithText("Conectar").assertIsNotEnabled()
-        compose.onNodeWithText("Volver al simulador").assertExists()
+        compose.onNodeWithText("Activar modo DEMO").assertExists()
     }
 
     @Test fun deviceLabRunsPassiveChecksWithoutHardware() {
@@ -96,9 +100,12 @@ class AppFlowTest {
         compose.onNodeWithTag("places-stopped").performClick()
         compose.onNodeWithTag("places-screen").performScrollToNode(hasTestTag("places-demo"))
         compose.onNodeWithTag("places-demo").performClick()
+        compose.waitUntil(10_000) { compose.onAllNodesWithText("Proveedor: SIMULACIÓN").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("places-screen").performScrollToNode(hasTestTag("search-RESTAURANT"))
         compose.onNodeWithTag("search-RESTAURANT").performClick()
-        compose.waitUntil(5_000) { compose.onAllNodesWithTag("select-place-0").fetchSemanticsNodes().isNotEmpty() }
+        compose.waitUntil(10_000) {
+            compose.onNodeWithTag("places-screen").fetchSemanticsNode().config[androidx.compose.ui.semantics.SemanticsProperties.StateDescription] == "Estado: READY"
+        }
         compose.onNodeWithTag("places-screen").performScrollToNode(hasTestTag("select-place-0"))
         compose.onNodeWithTag("select-place-0").performClick()
         compose.onNodeWithTag("places-screen").performScrollToNode(hasTestTag("open-selected-maps"))
