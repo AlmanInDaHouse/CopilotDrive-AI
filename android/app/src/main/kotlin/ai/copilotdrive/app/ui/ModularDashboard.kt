@@ -125,7 +125,7 @@ internal fun EssentialControls(state: DashboardState, onSettings: () -> Unit, on
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
                         textAlign = androidx.compose.ui.text.style.TextAlign.Start, modifier = Modifier.weight(1f))
                     Text("Leer respuesta", color = Mint, fontSize = 13.sp, maxLines = 2,
-                        modifier = Modifier.widthIn(max = 96.dp))
+                        modifier = Modifier.widthIn(max = 128.dp))
                 }
             }
             BoxWithConstraints {
