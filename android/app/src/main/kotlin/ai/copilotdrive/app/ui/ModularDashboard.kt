@@ -112,15 +112,21 @@ internal fun EssentialControls(state: DashboardState, onSettings: () -> Unit, on
                 else if (state.vehicleConnection == VehicleConnectionState.CONNECTED_REAL) "REAL · OBD conectado · ${state.vehicle?.source ?: "Sin datos"}"
                 else "REAL · ${connectionLabel(state.vehicleConnection)}", color = if (state.preferences.operationMode == OperationMode.DEMO) Amber else Muted,
                 fontSize = 12.sp, modifier = Modifier.testTag("telemetry-source"))
-            TextButton(onClick = { fullResponse = true }, contentPadding = PaddingValues(0.dp),
+            TextButton(onClick = { fullResponse = true }, contentPadding = PaddingValues(horizontal = 4.dp),
                 modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("voice-status").semantics {
                     liveRegion = LiveRegionMode.Polite
                     stateDescription = if (microphone) "Micrófono activo" else "Micrófono apagado"
                 }) {
-                Text(if (microphone) "MICRÓFONO ACTIVO · ${state.voice.message}"
-                    else (if (state.voice.message.startsWith("Micrófono apagado")) state.voice.message else "Micrófono apagado · ${state.voice.message}") + " · Leer respuesta",
-                    color = if (microphone) Amber else Muted, maxLines = 2, fontSize = 13.sp,
-                    modifier = Modifier.weight(1f))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(if (microphone) "MICRÓFONO ACTIVO · ${state.voice.message}"
+                        else if (state.voice.message.startsWith("Micrófono apagado")) state.voice.message else "Micrófono apagado · ${state.voice.message}",
+                        color = if (microphone) Amber else Muted, maxLines = 2, fontSize = 13.sp,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Start, modifier = Modifier.weight(1f))
+                    Text("Leer respuesta", color = Mint, fontSize = 13.sp, maxLines = 2,
+                        modifier = Modifier.widthIn(max = 96.dp))
+                }
             }
             BoxWithConstraints {
                 if (maxWidth / LocalDensity.current.fontScale >= 440.dp) {
