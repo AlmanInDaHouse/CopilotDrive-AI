@@ -1,3 +1,11 @@
+# Sprint 11 — REAL y cabina nativa
+
+REAL predeterminado y DEMO explícito; rediseño Compose y APK versionCode 2. Arquitectura, pruebas y límites en [SPRINT11_REPORT.md](SPRINT11_REPORT.md). La base remota canónica es el merge Sprint10.1 PR #11 `be3344c`; Sprint9 y el piloto físico previo están preservados.
+
+Sprint 12 propuesto: validación consentida del nuevo APK en HONOR, luego ELM327/Juke detenido; proveedor Places de pruebas con clave restringida y cuota; sesiones multimedia y Maps/Waze reales. Rendimiento emparejado solo con host apto. No ampliar a controles ECU ni Android Auto dentro de este sprint.
+
+---
+
 # Sprint10 — piloto físico preparado, calificación abierta
 
 Sprint9 fusionado por PR#10 en `793a353`; Android/Tests del merge success verificados.

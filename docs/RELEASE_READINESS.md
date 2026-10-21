@@ -1,3 +1,13 @@
+# Preparación actual — Sprint 11
+
+Candidata debug Android convencional 0.11.0-debug (versionCode 2), con REAL predeterminado y rediseño nativo. [SPRINT11_REPORT.md](SPRINT11_REPORT.md) contiene hashes, firma, pruebas, capturas y pendientes. No se ha hecho push, merge ni release.
+
+No se declara lista para producción comercial: firma de producción, credenciales restringidas, pruebas hardware y nueva validación física permanecen pendientes. El APK debug es para prueba consentida; no se instala automáticamente. Se conserva la política coarse-only, sin micrófono de fondo ni escrituras al vehículo.
+
+Historial conservado a continuación.
+
+---
+
 # Sprint10 — candidata debug para instalación controlada
 
 Revisión técnica local, sin publicación ni firma de producción. Resultados finales

@@ -1,3 +1,13 @@
+# Límites actuales — Sprint 11
+
+El APK nuevo aún requiere validación consentida en HONOR; la acústica Sprint10.1 pertenece al APK anterior. ELM327 y Nissan Juke 2020–2023 no probados en hardware; no se garantizan PIDs ni señales propietarias. Places sin clave queda NOT_CONFIGURED; proveedor facturable e IA real sin credenciales de prueba permanecen pendientes. Navegación abre intent, sin certificar ruta ni ETA. Sin sesión Android no hay reproducción inventada.
+
+La paleta implementada es de cabina oscura; no se presenta un tema claro inexistente. TalkBack humano/OEM e IME físicos pendientes. La presión de RAM observada obliga a separar builds de emuladores y limita la comparación de jank; no se afirma mejora ni ausencia de regresión de rendimiento sin medición emparejada. Evidencia y alcance exacto en [SPRINT11_REPORT.md](SPRINT11_REPORT.md).
+
+Historial conservado a continuación.
+
+---
+
 # Sprint10 — limitaciones actuales
 
 Sin teléfono autorizado: STT/TTS físico y audibilidad humana, foco OEM, OBD/vehículo,

@@ -1,0 +1,28 @@
+{
+  "codeCommit": "7463623a7bfba4ce58ceedda0b541e35783e5a72",
+  "apkSha256": "37adf5ee0bcc7668e7aebb529feb26feb8b28bca155c48f5456feb6ffd56f606",
+  "testApkSha256": "a14dc75289db8d88791aadd0b3addc0d42c3a8a3a0cf5d64592efbd7024bbda4",
+  "evidence": "AUTHENTIC_EMULATOR_CAPTURE",
+  "physicalQualification": "PENDING",
+  "beforeApkSha256": "c23f86e1b7dc7f3dea05d9af6e41374ef2b79a58d1227b302b7ca1ab12400ea2",
+  "fixtureImage": "sprint11-media-test-fixture.png",
+  "images": [
+    "before-dashboard.png",
+    "compare-1280x800.png",
+    "landscape-1024x600.png",
+    "landscape-1280x720.png",
+    "landscape-2412x1080.png",
+    "landscape-800x480.png",
+    "portrait-1080x2412.png",
+    "portrait-font150.png",
+    "sprint11-dashboard-demo.png",
+    "sprint11-dashboard-real.png",
+    "sprint11-device-lab.png",
+    "sprint11-jarvis-idle.png",
+    "sprint11-jarvis-response.png",
+    "sprint11-media-empty.png",
+    "sprint11-media-test-fixture.png",
+    "sprint11-places.png",
+    "sprint11-settings.png"
+  ]
+}

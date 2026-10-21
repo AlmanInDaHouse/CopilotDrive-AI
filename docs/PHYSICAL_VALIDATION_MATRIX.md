@@ -1,3 +1,23 @@
+# Sprint 11 — nueva candidata, evidencia física pendiente
+
+`ai.copilotdrive.app`, versionCode 2, 0.11.0-debug. El nuevo APK cambia UI y selección de fuentes: los resultados físicos del APK Sprint10.1 no se transfieren automáticamente. No se ha instalado ni operado el teléfono durante Sprint11.
+
+| Escenario Sprint11 | Estado | Método pendiente |
+|---|---|---|
+| Voz STT/TTS/Jarvis | PENDING | Pregunta real y confirmación humana de audibilidad |
+| Gasolina sin OBD | PENDING físico | Respuesta sin cifra inventada |
+| REAL/DEMO y persistencia | PENDING físico | Activación explícita, reinicio y vuelta a REAL |
+| Vertical/horizontal y fuente | PENDING físico | HONOR 1080×2412, insets OEM y legibilidad |
+| Segundo plano/cancelación | PENDING físico | Sin escucha automática al volver |
+| ELM327/Juke | PENDING | Autorización separada y lecturas allowlisted |
+| Multimedia/Maps/Waze/contactos | PENDING | Efecto observado y permisos/revocación |
+
+La firma, versión y SHA de la candidata se registran en [SPRINT11_REPORT.md](SPRINT11_REPORT.md). Antes de instalar: preflight pasivo con el teléfono conectado, comparación de firma y versión reales, presentar APK exacto y pedir autorización explícita. Sin uninstall/downgrade/clear-data. La actualización compatible conserva los DataStore y el layout v1; verificar después de instalar.
+
+La matriz siguiente es evidencia histórica de builds anteriores.
+
+---
+
 # Sprint 10.1 — descubrimiento físico
 
 2026-10-20 a 2026-10-21, Europe/Madrid; base `de7c4c8`, APK original SHA-256

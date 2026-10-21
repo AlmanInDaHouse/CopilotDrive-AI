@@ -1,3 +1,13 @@
+# Estado actual — Sprint 11
+
+Implementados: OperationMode tipado y persistente, migración REAL con aviso, OBD inicial desconectado, multimedia real vacía, respuestas locales honestas, limpieza al cambiar de fuente y sistema visual nativo compartido. Se conservan ocho widgets/presets/DataStore, voz validada previamente y todos los harness/fixtures.
+
+IA externa y Google Places requieren credenciales/consentimientos; OBD depende de adaptador/vehículo. No confundir pruebas de emulador con audibilidad ni compatibilidad física del nuevo APK. Resultados actuales: [SPRINT11_REPORT.md](SPRINT11_REPORT.md), [REAL_INTEGRATIONS_MATRIX.md](REAL_INTEGRATIONS_MATRIX.md).
+
+El material siguiente es historial y conserva sus fechas/alcances originales.
+
+---
+
 # Estado de implementación — Sprint 8 local; Sprints 1–7 fusionados
 
 Sprint 7 fusionado por PR #8 en 328ffec con CI Android/Tests success. Sprint 8 añade
